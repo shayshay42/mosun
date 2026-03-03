@@ -1,0 +1,17 @@
+Table S 1: Tumor parameter ranges
+Tumor parameter
+Range
+Note
+Tumor B cell proliferation rate
+[0, 0.15/day]
+Ref: 1,2
+Initial B cell count in tumor
+SPD ± 10%
+Baseline SPD for each individual patient from mosunetuzumab Ph 1 study GO29781 
+B to T cell ratio
+[4, 80]
+Ref: tumor lymphocyte infiltration observed in pre-treatment biopsies from 3, 4
+Roesch K, Hasenclever D, Scholz M. Modelling lymphoma therapy and outcome. Bull Math Biol  76 401-430. (2014)
+Tolo Diebkile A, et al. Characteristics and Results of the Management of Diffuse Large B-Cell Lymphomas: The Experience of Cote d'Ivoire. Adv Hematol  2012 945138. (2012)
+Hernandez, G., et al. Pharmacodynamic Effects and Immune Correlates of Response to the CD20/CD3 Bispecific Antibody Mosunetuzumab in Relapsed or Refractory Non-Hodgkin Lymphoma. Blood. 134, 1585 (2019).
+Autio M, et al. Immune cell constitution in the tumor microenvironment predicts the outcome in diffuse large B-cell lymphoma. Haematologica. (2020)

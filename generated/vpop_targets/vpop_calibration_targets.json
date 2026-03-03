@@ -1,0 +1,300 @@
+{
+  "schema_version": "1.0.0",
+  "created_utc": "2026-02-28T00:00:00Z",
+  "model_context": {
+    "drug": "mosunetuzumab",
+    "indication_scope": "r/r NHL (focus on FL and DLBCL/trFL)",
+    "primary_study": "GO29781 (NCT02500407)",
+    "intended_use": "Sampling-and-pruning VPop generation for Julia QSP simulations with clinically anchored constraints."
+  },
+  "hard_priors": [
+    {
+      "id": "tumor_bcell_proliferation_rate",
+      "parameter": "kBtumorprolif",
+      "prior_type": "uniform",
+      "bounds": {
+        "lower": 0.0,
+        "upper": 0.15
+      },
+      "units": "day^-1",
+      "priority": "hard",
+      "source": {
+        "type": "supplement_text",
+        "location": "assets/followup_paper/_extracted_text/cts13501-sup-0001-supinfo.txt:36"
+      }
+    },
+    {
+      "id": "tumor_b_to_t_ratio",
+      "parameter": "BT_ratio_tumor_init",
+      "prior_type": "log_uniform",
+      "bounds": {
+        "lower": 4.0,
+        "upper": 80.0
+      },
+      "units": "ratio",
+      "priority": "hard",
+      "source": {
+        "type": "supplement_table",
+        "location": "assets/followup_paper/_extracted_text/cts13501-sup-0002-tables1.txt:11"
+      }
+    },
+    {
+      "id": "baseline_tumor_bcell_from_spd_primary",
+      "parameter": "Btumor_perml_init",
+      "prior_type": "relative_to_patient_spd_derived_baseline",
+      "bounds_relative_factor": {
+        "lower": 0.9,
+        "upper": 1.1
+      },
+      "units": "fold",
+      "priority": "hard",
+      "note": "Table S1 extracted text gives SPD +/- 10% around each patient's baseline SPD-derived tumor burden.",
+      "source": {
+        "type": "supplement_table",
+        "location": "assets/followup_paper/_extracted_text/cts13501-sup-0002-tables1.txt:8"
+      }
+    },
+    {
+      "id": "baseline_tumor_bcell_from_spd_alternative",
+      "parameter": "Btumor_perml_init",
+      "prior_type": "relative_to_patient_spd_derived_baseline",
+      "bounds_relative_factor": {
+        "lower": 0.5,
+        "upper": 1.5
+      },
+      "units": "fold",
+      "priority": "sensitivity",
+      "note": "Supplementary methods prose states +/- 50%; keep as alternate sensitivity range due source inconsistency.",
+      "source": {
+        "type": "supplement_text",
+        "location": "assets/followup_paper/_extracted_text/cts13501-sup-0001-supinfo.txt:36"
+      }
+    },
+    {
+      "id": "baseline_residual_rituximab_detectable_fraction",
+      "variable": "RTX_detectable_at_baseline",
+      "target_type": "binomial_fraction",
+      "target_fraction": 0.4785714286,
+      "counts": {
+        "n_detectable": 67,
+        "n_total": 140
+      },
+      "priority": "hard",
+      "note": "Detectable defined relative to assay lower limit of quantification in study reporting.",
+      "source": {
+        "type": "paper_text",
+        "location": "assets/followup_paper/_extracted_text/main_pdf.txt:447"
+      }
+    }
+  ],
+  "cohort_composition_targets": [
+    {
+      "id": "overall_subtype_counts",
+      "target_type": "counts",
+      "values": {
+        "all_rr_nhl": 140,
+        "dlbcl_plus_trfl": 73,
+        "fl": 50,
+        "other_subtypes": 17
+      },
+      "priority": "hard",
+      "source": {
+        "type": "supplement_table",
+        "location": "assets/followup_paper/_extracted_text/cts13501-sup-0003-tables2.txt:100"
+      }
+    },
+    {
+      "id": "regimen_counts_go29781_phase1",
+      "target_type": "counts_by_regimen",
+      "values": {
+        "fixed_0.05mg": 1,
+        "fixed_0.2mg": 1,
+        "fixed_0.4mg": 3,
+        "fixed_0.8mg": 2,
+        "fixed_1.2mg": 4,
+        "fixed_1.6mg": 6,
+        "fixed_2.0mg": 3,
+        "fixed_2.8mg": 7,
+        "step_0.4_1_2.8mg": 6,
+        "step_0.8_2_4.2mg": 14,
+        "step_1.0_1.0_3.0mg": 1,
+        "step_1.0_2.0_6.0mg": 5,
+        "step_0.8_2.0_6.0mg": 25,
+        "step_1.0_2.0_9.0mg": 5,
+        "step_1.0_2.0_13.5mg": 50,
+        "step_1.0_2.0_20.0mg": 6,
+        "step_1.0_2.0_27.0mg": 1
+      },
+      "priority": "hard",
+      "source": {
+        "type": "supplement_table",
+        "location": "assets/followup_paper/_extracted_text/cts13501-sup-0003-tables2.txt:13"
+      }
+    }
+  ],
+  "dose_schedule_constraints": [
+    {
+      "id": "phase1_regimen_structure",
+      "target_type": "categorical",
+      "values": {
+        "group_a_fixed": "q3w fixed dose (0.05-2.8 mg)",
+        "group_b_stepup": "C1D1/C1D8/C1D15 step-up, then q3w target dose (0.4/1/2.8 to 1/2/27 mg)"
+      },
+      "priority": "hard",
+      "source": {
+        "type": "supplement_text",
+        "location": "assets/followup_paper/_extracted_text/cts13501-sup-0001-supinfo.txt:14"
+      }
+    },
+    {
+      "id": "approved_label_schedule_anchor",
+      "target_type": "categorical",
+      "values": {
+        "cycle1_day1": "1 mg",
+        "cycle1_day8": "2 mg",
+        "cycle1_day15": "60 mg",
+        "cycle2_day1": "60 mg",
+        "cycle3_plus_day1_q3w": "30 mg"
+      },
+      "priority": "soft_external",
+      "source": {
+        "type": "label",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=2ef0cf38-101c-4681-98fe-c05dc9ead443"
+      }
+    }
+  ],
+  "clinical_endpoint_targets": [
+    {
+      "id": "phase1_day42_response_definition",
+      "endpoint": "partial_response_proxy",
+      "definition": ">= 50% reduction in SPD at Day 42",
+      "time_day": 42,
+      "priority": "hard_definition",
+      "source": {
+        "type": "supplement_text",
+        "location": "assets/followup_paper/_extracted_text/cts13501-sup-0001-supinfo.txt:38"
+      }
+    },
+    {
+      "id": "fl_er_model_predicted_low_regimen",
+      "population": "r/r FL",
+      "regimen": "1/2/13.5 mg step-up regimen",
+      "metrics": {
+        "predicted_cr_percent": 37.4,
+        "predicted_orr_percent": 58.2,
+        "predicted_grade_ge2_crs_percent": 7.0
+      },
+      "priority": "soft_external",
+      "source": {
+        "type": "peer_reviewed_abstract",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39328022/"
+      }
+    },
+    {
+      "id": "fl_er_model_predicted_rp2d_regimen",
+      "population": "r/r FL",
+      "regimen": "1/2/60 mg in cycle 1 then 30 mg q3w",
+      "metrics": {
+        "predicted_cr_percent": 63.1,
+        "predicted_orr_percent": 79.1,
+        "predicted_grade_ge2_crs_percent": 11.8
+      },
+      "priority": "soft_external",
+      "source": {
+        "type": "peer_reviewed_abstract",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39328022/"
+      }
+    },
+    {
+      "id": "fl_observed_go29781_reference",
+      "population": "r/r FL",
+      "regimen": "1/2/60 mg in cycle 1 then 30 mg q3w",
+      "metrics": {
+        "observed_cr_percent": 60.0,
+        "observed_orr_percent": 77.8,
+        "observed_grade_ge2_crs_percent": 11.7
+      },
+      "priority": "soft_external",
+      "source": {
+        "type": "peer_reviewed_abstract",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/39328022/"
+      }
+    },
+    {
+      "id": "fl_long_term_outcomes",
+      "population": "r/r FL",
+      "sample_size": 90,
+      "regimen": "1/2/60 mg in cycle 1 then 30 mg q3w",
+      "metrics": {
+        "orr_percent": 77.8,
+        "cr_percent": 60.0,
+        "median_dor_months": 35.9,
+        "median_pfs_months": 24.0,
+        "os_36_month_percent": 82.4
+      },
+      "priority": "soft_external",
+      "source": {
+        "type": "peer_reviewed_full_text",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11863491/"
+      }
+    }
+  ],
+  "pk_and_baseline_distribution_targets": [
+    {
+      "id": "pk_dose_proportionality_window",
+      "metric": "exposure_vs_dose",
+      "statement": "Approximately dose-proportional PK from 0.2 to 60 mg in phase I/II data.",
+      "priority": "soft_external",
+      "source": {
+        "type": "peer_reviewed_full_text",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11134317/"
+      }
+    },
+    {
+      "id": "baseline_spd_distribution_global_fl",
+      "population": "r/r FL global cohort",
+      "metric": "baseline_SPD_mm2",
+      "target_summary": {
+        "median": 3010.0,
+        "range_min": 234.0,
+        "range_max": 15800.0
+      },
+      "priority": "soft_external",
+      "source": {
+        "type": "peer_reviewed_full_text",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12025118/"
+      }
+    },
+    {
+      "id": "baseline_spd_distribution_china_fl",
+      "population": "r/r FL Chinese cohort",
+      "metric": "baseline_SPD_mm2",
+      "target_summary": {
+        "median": 2100.0,
+        "range_min": 336.0,
+        "range_max": 16500.0
+      },
+      "priority": "soft_external",
+      "source": {
+        "type": "peer_reviewed_full_text",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12025118/"
+      }
+    }
+  ],
+  "data_gaps_and_followups": [
+    {
+      "id": "patient_level_go29781_data_not_embedded",
+      "gap": "No full patient-level GO29781 longitudinal SPD/PK/IL6 dataset is included in this repository.",
+      "action": "Use summary-calibrated acceptance criteria now; pursue controlled-access IPD if needed for tighter calibration."
+    },
+    {
+      "id": "patient_specific_pk_inputs_not_public",
+      "gap": "Follow-up methods state patient-specific PK came from PopPK post-hoc estimates, but those post-hoc vectors are not provided in assets.",
+      "action": "Use published popPK distributions/typical values or recover PK covariate distributions from available publications."
+    }
+  ],
+  "local_prior_table": {
+    "parameter_bounds_csv": "generated/vpop_targets/parameter_prior_bounds_from_params_sheet.csv",
+    "note": "Extracted from assets/params_41540_2020_145_MOESM2_ESM.xlsx Sheet1 rows with explicit Cyno_LB/Cyno_UB bounds."
+  }
+}

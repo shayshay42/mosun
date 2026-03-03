@@ -1,0 +1,21 @@
+   Configuration Settings - default (active)
+     SolverType:                   ode15s
+     StopTime:                     40
+
+   SolverOptions:
+     AbsoluteTolerance:            1e-06
+     AbsoluteToleranceScaling:     true
+     RelativeTolerance:            0.001
+     SensitivityAnalysis:          false
+
+   RuntimeOptions:
+     StatesToLog:                  131
+
+   CompileOptions:
+     UnitConversion:               false
+     DimensionalAnalysis:          false
+
+   SensitivityAnalysisOptions:
+     Inputs:                       0
+     Outputs:                      0
+

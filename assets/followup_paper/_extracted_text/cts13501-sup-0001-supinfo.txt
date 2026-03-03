@@ -1,0 +1,53 @@
+Supplementary Materials
+Supplementary Methods2
+Clinical Data2
+Transient binding competition of mosunetuzumab and rituximab2
+Derivation of effective mosunetuzumab  concentration [M]eff2
+Procedure for KDR calibration3
+Parameter estimation for each clinical patient & generation of individualized virtual patients (iVPs)5
+Description of model parameter categories5
+Virtual population simulation6
+References7
+Supplementary Methods
+Clinical Data
+In this work, iVPs were generated from clinical data from 140 patients in dose escalation cohorts (clinical data cut of September 2019) who received mosunetuzumab monotherapy (Table S1) in two dosing regimens specified in the Supplementary Methods. 
+Group A (fixed dosing): mosunetuzumab administered intravenously (IV) at a fixed dose level every 3 weeks (q3w). The dose range from this group was 0.05 to 2.8mg.  
+Group B (Cycle 1 step-up dosing): mosunetuzumab administered IV, with escalating step-up doses on Cycle 1 Day 1 (C1D1) and C1D8, and target dose on C1D15, followed by administration of the target dose q3w on Day 1 of subsequent cycles. The dose range from this group was 0.4/1/2.8 to 1/2/27mg (C1D1/C1D8/C1D15 dose).
+Patients in the trial had different NHL subtypes (Table S1). The dose/exposure-response were assessed for the two most common subtypes: DLBCL and transformed FL (trFL) (N = 73), and FL (N = 50).
+Transient binding competition of mosunetuzumab and rituximab      
+Derivation of effective mosunetuzumab  concentration [M]eff
+In the present QSP model, the effect of competitive antagonist action of rituximab on  mosunetuzumab activity was analyzed using the Schild method1. At equilibrium, the receptor occupancy of mosunetuzumab (ROM) in the presence of residual rituximab concentration ([R]) is, 
+,  (1)
+where [M] is mosunetuzumab concentration, KDM and KDR are the mosunetuzumab and rituximab equilibrium dissociation constants, i.e. the binding affinity of the molecules to CD20, respectively. 
+The effective concentration, [M]eff, is defined as the adjusted single-agent mosunetuzumab concentration where the ROM is equivalent to the ROM in the presence of rituximab (Equation 1), 
+ ,  (2)
+Solving for [M]eff,
+ .  (3)
+In the updated QSP model, the [M]eff drives T cell activation and target cell killing.
+Procedure for KDR calibration 
+Out of the 140 clinical patients from Study GO29781, 73 patients had undetectable baseline rituximab (≤ lower limit of quantification of 0.5μg/mL), therefore, in this subset [M]eff = [M]. A VPOP consisting of iVPs calibrated using data from this subset of patients with undetectable baseline rituximab (RTX-) was generated (RTX- VPOP, first step in Figure 1C) following the methods described in the iVP generation section (Figure 2) and was used to calibrate KDR. Assuming that the patients with undetectable baseline rituximab have similar characteristics compared to the patients with residual baseline rituximab, with the exception of the baseline rituximab level, then, the model parameters of the iVPs in the RTX- VPOP should adequately describe the therapeutic outcomes in the actual patients with detectable baseline rituximab (RTX+). Moreover, simulation of tumor dynamics in the RTX- VPOP where the baseline rituximab level was altered to match the distribution of RTX+ patients with the appropriate KDR value should represent the patient population with RTX+. 
+The KDR calibration was performed using grid search optimization. Simulations were performed using a range of KDR between 10-2 to 103 μg/mL and the KDR value with the lowest RMSE for change in sum of the products of the greatest perpendicular diameters of the tumor (SPD) at Day 42 between the median simulation and median of binned clinical data of RTX+ patients were chosen as the clinical in vivo KDR (Supplementary Figure S1).
+The value of KDR measured in vitro has been reported in literature ranging from 0.2 to 18.7 nM2-8. When the KDR was estimated using the Schild analysis from in vitro cytotoxicity assay of mosunetuzumab in the presence of effectorless rituximab (Figure 7C in Sun et al5), it was found to be 186 nM. The wide range of KDR values found in literature and the uncertainty of the translation to clinical in vivo settings motivated the calibration of clinical in vivo KDR step (Figure 1C) in the model development workflow. The procedure for KDR calibration can be found in the Supplementary Methods. The value of clinical KDR calibrated using this method was 22 nM (3.16 μg/mL), which falls between the reported in vitro KDR and the value estimated from in vitro cytotoxicity assay. Using this calibrated KDR, iVPs for each patients with RTX+ can then be generated. 
+Parameter estimation for each clinical patient & generation of individualized virtual patients (iVPs)
+Description of model parameter categories
+The model parameters for the candidate iVPs can be classified into three categories: system parameters, patient-specific parameters, and tumor parameters.
+The system parameters represent biological variability and include healthy subject parameters and drug effect parameters, which were taken from the preclinical virtual cyno cohort (50 alternate parameterizations representing virtual cynos) and translated to humans9. 
+The patient-specific parameters include PK and baseline measurements of circulating B-      and T-cells. The PK input for each patient in the model was obtained from the PopPK post-hoc estimates in Li et al10. 
+Tumor parameters, such as tumor cell proliferation rate, tumor burden (baseline B-cell numbers in tumor), and the B:T-cell ratio in the tumor were constrained based on physiologically-relevant ranges based on tumor lymphocyte infiltration observed in pre-treatment biopsies (Table S2). The range used for tumor cell proliferation rate was between 0 and 0.15 day-1 based on clinical observations in GO29781 and measurements from literature11, 12. The baseline tumor B-cell count was calculated from the patient’s baseline SPD measurement assuming that the tumor consists of, on average, three spherical lesions with ~80% of the tumor volume consisting of tumor B-cells. The range for the patient’s tumor baseline B-cell count was selected to be within ±50% of the calculated B-cell count. If the remaining 20% of the tumor consisted of T-cells, then the smallest possible B:T-cell ratio would be 4. The upper limit of the tumor B:T-cell ratio was set to 8013. 
+Virtual population simulation
+The VPOP consisting of the iVPs generated from clinical patients were used to estimate the population response at different dose levels/regimens to enable the characterization of the dose/exposure-response relationship. For dose-response analysis, the VPOP simulations were performed at the dose level of each clinical cohort. To generate smooth exposure-response curves (Figure 3), the VPOP was simulated at dose levels that corresponded to area under the concentration curve (AUC) levels from 0.01 to 100 days*μg/mL for step-up dosing regimens. In Figure 4, the proportion of the iVPs with at least a 50% reduction in SPD (as a reference target for clinical response) for each cohort was plotted against the cumulative dose at Day 42. The Day 42 time point was chosen because it was approximately the first post-treatment tumor measurement in the clinical study and where measurable changes in tumor size were observed in patients. The value of 50% SPD reduction was a relevant metric because according to the Cheson 2007 criteria14 for NHL patients, partial response was defined as ≥ 50% decrease in SPD of up to six largest dominant masses. Therefore, the vertical axes in the plots in Figure 3 and Figure 4 correspond to the proportion of the iVPs achieving at least partial response by Day 42. To evaluate the dose-/exposure-response relationship at a later time point, the aforementioned dose/exposure-response plots were also generated for Day 84 and presented in the Supplementary Figure. 
+References 
+1.Wyllie, D.J. & Chen, P.E. Taking the time to study competitive antagonism. Br J Pharmacol. 150, 541-551 (2007).
+2.Bondza, S., et al. Real-time Characterization of Antibody Binding to Receptors on Living Immune Cells. Front Immunol. 8, 455 (2017).
+3.Goldenberg, D.M., et al. Properties and structure-function relationships of veltuzumab (hA20), a humanized anti-CD20 monoclonal antibody. Blood. 113, 1062-1070 (2009).
+4.Melhus, K.B., et al. Evaluation of the binding of radiolabeled rituximab to CD20-positive lymphoma cells: an in vitro feasibility study concerning low-dose-rate radioimmunotherapy with the alpha-emitter 227Th. Cancer Biother Radiopharm. 22, 469-479 (2007).
+5.Reff, M.E., et al. Depletion of B cells in vivo by a chimeric mouse human monoclonal antibody to CD20. Blood. 83, 435-445 (1994).
+6.Stein, R., et al. Characterization of a new humanized anti-CD20 monoclonal antibody, IMMU-106, and Its use in combination with the humanized anti-CD22 antibody, epratuzumab, for the therapy of non-Hodgkin's lymphoma. Clin Cancer Res. 10, 2868-2878 (2004).
+7.Zhao, L., et al. Combating non-Hodgkin lymphoma by targeting both CD20 and HLA-DR through CD20-243 CrossMab. MAbs. 6, 740-748 (2014).
+8.. Rituxan (Rituximab) [package insert]. San Diego, CA: IDEC Pharmaceuticals Corporation. South San Francisco, CA: Genentech, Inc.; 1997.
+9.Hosseini, I., et al. Mitigating the risk of cytokine release syndrome in a Phase I trial of CD20/CD3 bispecific antibody mosunetuzumab in NHL: impact of translational system modeling. NPJ Syst Biol Appl. 6, 28 (2020).
+10.Li, C.-C., et al. Exposure-Response Analyses Indicate a Promising Benefit/Risk Profile of Mosunetuzumab in Relapsed and Refractory Non-Hodgkin Lymphoma. Blood. 134, 1285 (2019).
+11.Roesch, K., Hasenclever, D. & Scholz, M. Modelling lymphoma therapy and outcome. Bull Math Biol. 76, 401-430 (2014).
+12.Tolo Diebkile, A., et al. Characteristics and Results of the Management of Diffuse Large B-Cell Lymphomas: The Experience of Cote d'Ivoire. Adv Hematol. 2012, 945138 (2012).
+13.Hernandez, G., et al. Pharmacodynamic Effects and Immune Correlates of Response to the CD20/CD3 Bispecific Antibody Mosunetuzumab in Relapsed or Refractory Non-Hodgkin Lymphoma. Blood. 134, 1585 (2019).
+14.Cheson, B.D. New response criteria for lymphomas in clinical trials. Ann Oncol. 19 Suppl 4, iv35-38 (2008).

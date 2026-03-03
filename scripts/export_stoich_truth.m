@@ -1,0 +1,15 @@
+repo_root = '/Users/shayanhajhashemi/genentech_tce_vpop_translation';
+cd(fullfile(repo_root,'assets','Supp Matlab Code'));
+s = sbioloadproject('TDBr26_6_paper.sbproj');
+c = struct2cell(s); model = c{1};
+S = getstoichmatrix(model);
+[ri,ci,v] = find(S);
+sp_names = string(arrayfun(@(x) x.Name, model.Species, 'UniformOutput', false));
+rxn_idx = ci(:);
+species_idx = ri(:);
+species_name = sp_names(species_idx);
+stoich = v(:);
+out = table(rxn_idx, species_idx, species_name, stoich);
+out_path = fullfile(repo_root,'generated','model_tables','stoich_truth.tsv');
+writetable(out, out_path, 'FileType', 'text', 'Delimiter', '\t');
+fprintf('Wrote %s\n', out_path);

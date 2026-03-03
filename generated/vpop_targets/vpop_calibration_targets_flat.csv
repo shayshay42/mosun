@@ -1,0 +1,30 @@
+id,category,population,regimen,metric,target_value,units,priority,source
+tumor_bcell_proliferation_rate,hard_prior,all,na,lower_bound,0.0,day^-1,hard,assets/followup_paper/_extracted_text/cts13501-sup-0001-supinfo.txt:36
+tumor_bcell_proliferation_rate,hard_prior,all,na,upper_bound,0.15,day^-1,hard,assets/followup_paper/_extracted_text/cts13501-sup-0001-supinfo.txt:36
+tumor_b_to_t_ratio,hard_prior,all,na,lower_bound,4.0,ratio,hard,assets/followup_paper/_extracted_text/cts13501-sup-0002-tables1.txt:11
+tumor_b_to_t_ratio,hard_prior,all,na,upper_bound,80.0,ratio,hard,assets/followup_paper/_extracted_text/cts13501-sup-0002-tables1.txt:11
+baseline_tumor_bcell_from_spd_primary,hard_prior,all,na,relative_lower_factor,0.9,fold,hard,assets/followup_paper/_extracted_text/cts13501-sup-0002-tables1.txt:8
+baseline_tumor_bcell_from_spd_primary,hard_prior,all,na,relative_upper_factor,1.1,fold,hard,assets/followup_paper/_extracted_text/cts13501-sup-0002-tables1.txt:8
+baseline_tumor_bcell_from_spd_alternative,hard_prior,all,na,relative_lower_factor,0.5,fold,sensitivity,assets/followup_paper/_extracted_text/cts13501-sup-0001-supinfo.txt:36
+baseline_tumor_bcell_from_spd_alternative,hard_prior,all,na,relative_upper_factor,1.5,fold,sensitivity,assets/followup_paper/_extracted_text/cts13501-sup-0001-supinfo.txt:36
+baseline_residual_rituximab_detectable_fraction,hard_prior,all,na,target_fraction,0.4785714286,fraction,hard,assets/followup_paper/_extracted_text/main_pdf.txt:447
+fl_er_model_predicted_low_regimen,clinical_endpoint,r/r FL,1/2/13.5 mg step-up regimen,predicted_cr_percent,37.4,percent_or_months,soft_external,https://pubmed.ncbi.nlm.nih.gov/39328022/
+fl_er_model_predicted_low_regimen,clinical_endpoint,r/r FL,1/2/13.5 mg step-up regimen,predicted_orr_percent,58.2,percent_or_months,soft_external,https://pubmed.ncbi.nlm.nih.gov/39328022/
+fl_er_model_predicted_low_regimen,clinical_endpoint,r/r FL,1/2/13.5 mg step-up regimen,predicted_grade_ge2_crs_percent,7.0,percent_or_months,soft_external,https://pubmed.ncbi.nlm.nih.gov/39328022/
+fl_er_model_predicted_rp2d_regimen,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,predicted_cr_percent,63.1,percent_or_months,soft_external,https://pubmed.ncbi.nlm.nih.gov/39328022/
+fl_er_model_predicted_rp2d_regimen,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,predicted_orr_percent,79.1,percent_or_months,soft_external,https://pubmed.ncbi.nlm.nih.gov/39328022/
+fl_er_model_predicted_rp2d_regimen,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,predicted_grade_ge2_crs_percent,11.8,percent_or_months,soft_external,https://pubmed.ncbi.nlm.nih.gov/39328022/
+fl_observed_go29781_reference,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,observed_cr_percent,60.0,percent_or_months,soft_external,https://pubmed.ncbi.nlm.nih.gov/39328022/
+fl_observed_go29781_reference,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,observed_orr_percent,77.8,percent_or_months,soft_external,https://pubmed.ncbi.nlm.nih.gov/39328022/
+fl_observed_go29781_reference,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,observed_grade_ge2_crs_percent,11.7,percent_or_months,soft_external,https://pubmed.ncbi.nlm.nih.gov/39328022/
+fl_long_term_outcomes,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,orr_percent,77.8,percent_or_months,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC11863491/
+fl_long_term_outcomes,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,cr_percent,60.0,percent_or_months,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC11863491/
+fl_long_term_outcomes,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,median_dor_months,35.9,percent_or_months,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC11863491/
+fl_long_term_outcomes,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,median_pfs_months,24.0,percent_or_months,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC11863491/
+fl_long_term_outcomes,clinical_endpoint,r/r FL,1/2/60 mg in cycle 1 then 30 mg q3w,os_36_month_percent,82.4,percent_or_months,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC11863491/
+baseline_spd_distribution_global_fl,pk_or_baseline,r/r FL global cohort,na,median,3010.0,mm2,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC12025118/
+baseline_spd_distribution_global_fl,pk_or_baseline,r/r FL global cohort,na,range_min,234.0,mm2,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC12025118/
+baseline_spd_distribution_global_fl,pk_or_baseline,r/r FL global cohort,na,range_max,15800.0,mm2,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC12025118/
+baseline_spd_distribution_china_fl,pk_or_baseline,r/r FL Chinese cohort,na,median,2100.0,mm2,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC12025118/
+baseline_spd_distribution_china_fl,pk_or_baseline,r/r FL Chinese cohort,na,range_min,336.0,mm2,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC12025118/
+baseline_spd_distribution_china_fl,pk_or_baseline,r/r FL Chinese cohort,na,range_max,16500.0,mm2,soft_external,https://pmc.ncbi.nlm.nih.gov/articles/PMC12025118/

@@ -1,0 +1,2 @@
+MODEL_NAME	TDB
+COUNTS	compartments	1	species	131	parameters	107	reactions	116	rules	101	events	0	variants	35	doses	41

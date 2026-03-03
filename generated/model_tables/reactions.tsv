@@ -1,0 +1,117 @@
+idx	reaction	rate
+1	Btiss -> 2 Btiss	kBprolif*KBp*Bpbref_perml*Vtissue*(max(0, 1 - Btiss/(KBp*Bpbref_perml*Vtissue)))^1
+2	restTtiss + drugTtissact + BlinTtissact <-> actTtiss + drugTtissact + BlinTtissact	kTact*((drugTtissact+BlinTtissact)*restTtiss-fTadeact*actTtiss)
+3	Btiss -> null	0*fBprolif*kBprolif*Btiss*kBapop_cll
+4	TDBc_ugperkg <-> null	(Cl_tdb+Vm_tdb/(Km_tdb+TDBc_ugperkg/Vc_tdb)/BW)/Vc_tdb*TDBc_ugperkg
+5	TDBc_ugperkg <-> TDBp_ugperkg	Cld_tdb*(TDBc_ugperkg/Vc_tdb-TDBp_ugperkg/Vp_tdb)
+6	restTtiss + Btiss + drugTtissact + TDBt_ugperml -> restTtiss + Btiss + drugTtissact + TDBt_ugperml + restTtiss	0
+7	actTtiss + Btiss + drugBtisskill + TDBt_ugperml -> actTtiss + Btiss + drugBtisskill + TDBt_ugperml	0
+8	restTpb + injection_effect + drug_effect <-> restTtiss + injection_effect + drug_effect	tissue1on*kTrexit*Vpb*((1+finj*injection_effect+fdrug*drug_effect)*restTpb/Vpb*KTrp-restTtiss/Vtissue)
+9	totTpb_perml -> restTpb + totTpb_perml	kTgen*Vpb*Trpbref_perml*(fTgenbl+max(0,1-totTpb_perml/Trpbref_perml)^2)
+10	Bpb -> Btiss	tissue1on*fBexit*kTaexit*Vpb*max(0, Bpb/Vpb*KBp-Btiss/Vtissue)
+11	restTpb + drugTpbact + BlinTpbact <-> actTpb + drugTpbact + BlinTpbact	kTact*((drugTpbact+BlinTpbact)*restTpb-fTadeact*actTpb)
+12	Bpb -> 2 Bpb	tissue3on*fBtissue3_v1*kBapop*Bpb*kBapop_cll
+13	Bpb -> null	kBapop*Bpb*kBapop_cll
+14	TDBc_ugperml + drugTpbact + Bpb -> TDBc_ugperml + drugTpbact + Bpb	0
+15	TDBc_ugperml + actTpb + drugBpbkill + Bpb -> TDBc_ugperml + actTpb + drugBpbkill + Bpb	0
+16	actTpb + drugBpbkill + Bpb + RTXc_ugperml + BlinBpbkill -> actTpb + drugBpbkill + RTXc_ugperml + BlinBpbkill	kBkill*(drugBpbkill + BlinBpbkill + RTXc_ugperml/(Kmkill_rtx/1000+RTXc_ugperml))*Bpb
+17	actTtiss + drugBtisskill + Btiss + RTXt_ugperml + BlinBtisskill -> actTtiss + drugBtisskill + RTXt_ugperml + BlinBtisskill	fBkill*kBkill*(drugBtisskill + BlinBtisskill + RTXt_ugperml/(Kmkill_rtx/1000+RTXt_ugperml))*Btiss
+18	restTpb -> null	kTgen*fTgenbl*restTpb + fTrapop*kTaapop*max(0,restTpb-Trpbref_perml*Vpb)
+19	actTpb + injection_effect + drug_effect <-> actTtiss + injection_effect + drug_effect	tissue1on*kTaexit*Vpb*((1+fa0*(finj*injection_effect+fdrug*drug_effect))*actTpb/Vpb*KTrp*fTap-actTtiss/Vtissue)
+20	actTpb -> null	kTaapop*(actTpb + fAICD*actTpb^2/(Vpb*Trpbref_perml))
+21	BAFF + Btiss + Bpb + Btiss2 -> Btiss + Bpb + Btiss2	log(2)/(thBAFF/24/60)*(fBAFFo*BAFF/BAFFo+(1-fBAFFo)*(Btiss+ Bpb + Btiss2)/(Bpbref_perml*(Vpb+KBp*Vtissue + KBp2*Vtissue2)))
+22	null -> BAFF	log(2)/(thBAFF/24/60) * (fBAFFo+(1-fBAFFo)*Bpbo_perml/Bpbref_perml)
+23	act0Tpb -> restTpb	act0on*fTa0deact*act0Tpb
+24	act0Tpb + drugTpbact + BlinTpbact <-> actTpb + drugTpbact + BlinTpbact	act0on*kTact*((drugTpbact+BlinTpbact)*act0Tpb-fTadeact*actTpb)
+25	act0Tpb -> null	fTa0apop*kTaapop*act0Tpb
+26	act0Ttiss -> null	fTa0apop*kTaapop*act0Ttiss
+27	act0Ttiss + drugTtissact + BlinTtissact <-> actTtiss + drugTtissact + BlinTtissact	act0on*kTact*((drugTtissact+BlinTtissact)*act0Ttiss-fTadeact*actTtiss)
+28	act0Ttiss -> restTtiss	act0on*fTa0deact*act0Ttiss
+29	act0Tpb + injection_effect + drug_effect <-> act0Ttiss + injection_effect + drug_effect	tissue1on*act0on*kTrexit*Vpb*((1+finj*injection_effect+fdrug*drug_effect)*act0Tpb/Vpb*KTrp-act0Ttiss/Vtissue)
+30	actTpb -> actTpb + act0Tpb	act0on*fTaprolif*kTprolif*actTpb
+31	actTtiss -> actTtiss + act0Ttiss	act0on*fTaprolif*kTprolif*actTtiss
+32	injection_effect -> null	log(2)/tinjhalf*injection_effect
+33	actTtiss2 -> actTtiss2 + act0Ttiss2	act0on*fTaprolif*kTprolif*actTtiss2
+34	act0Tpb + injection_effect + drug_effect <-> act0Ttiss2 + injection_effect + drug_effect	tissue2on*act0on*kTrexit*Vpb*((1+finj*injection_effect+fdrug*drug_effect)*act0Tpb/Vpb*KTrp2-act0Ttiss2/Vtissue2)
+35	act0Ttiss2 -> restTtiss2	act0on*fTa0deact*act0Ttiss2
+36	act0Ttiss2 + drugTtissact2 + BlinTtissact2 <-> actTtiss2 + drugTtissact2 + BlinTtissact2	act0on*kTact*((drugTtissact2+BlinTtissact2)*act0Ttiss2-fTadeact*actTtiss2)
+37	act0Ttiss2 -> null	fTa0apop*kTaapop*act0Ttiss2
+38	actTpb + injection_effect + drug_effect <-> actTtiss2 + injection_effect + drug_effect	tissue2on*kTaexit*Vpb*((1+fa0*(finj*injection_effect+fdrug*drug_effect))*actTpb/Vpb*KTrp2*fTap-actTtiss2/Vtissue2)
+39	actTtiss2 + drugBtisskill2 + Btiss2 + RTXt2_ugperml + BlinBtisskill2 -> actTtiss2 + drugBtisskill2 + RTXt2_ugperml + BlinBtisskill2	fBkill*kBkill*(drugBtisskill2+ BlinBtisskill2 + RTXt2_ugperml/(Kmkill_rtx/1000+RTXt2_ugperml))*Btiss2
+40	Bpb -> Btiss2	tissue2on*fBexit*kTaexit*Vpb*max(0, Bpb/Vpb*KBp2-Btiss2/Vtissue2)
+41	restTpb + injection_effect + drug_effect <-> restTtiss2 + injection_effect + drug_effect	tissue2on*kTrexit*Vpb*((1+finj*injection_effect+fdrug*drug_effect)*restTpb/Vpb*KTrp2-restTtiss2/Vtissue2)
+42	actTtiss2 + Btiss2 + drugBtisskill2 + TDBt2_ugperml -> actTtiss2 + Btiss2 + drugBtisskill2 + TDBt2_ugperml	0
+43	restTtiss2 + Btiss2 + drugTtissact2 + TDBt2_ugperml -> restTtiss2 + Btiss2 + drugTtissact2 + TDBt2_ugperml	0
+44	Btiss2 -> null	0*fBprolif*kBprolif*Btiss2*kBapop_cll
+45	restTtiss2 + drugTtissact2 + BlinTtissact2 <-> actTtiss2 + drugTtissact2 + BlinTtissact2	kTact*((drugTtissact2+BlinTtissact2)*restTtiss2-fTadeact*actTtiss2)
+46	Btiss2 -> 2 Btiss2	kBprolif*KBp2*Bpbref_perml*Vtissue2*(max(0, 1 - Btiss2/(KBp2*Bpbref_perml*Vtissue2)))^1
+47	RTXc_ugperkg <-> RTXp_ugperkg	Cld_rtx*(RTXc_ugperkg/Vc_rtx-RTXp_ugperkg/Vp_rtx)
+48	RTXc_ugperkg <-> null	(Cl_rtx+Vm_rtx/(Km_rtx+RTXc_ugperkg/Vc_rtx)/BW)/Vc_rtx*RTXc_ugperkg
+49	drug_effect -> null	log(2)/tinjhalf*drug_effect
+50	null -> B19no20tiss3	Bpbref_perml*KBp3*B19no20_B1920_ratio*Vtissue3*(kBapop+(kBapop/kBmat_kBapop_ratio))* (1+5*(max(0, 1 - (Bpb+Btiss+Btiss2)/(Bpbref_perml*Vpb+KBp*Bpbo_perml*Vtissue+KBp2*Bpbo_perml*Vtissue2)))^1)
+51	B19no20tiss3 -> B1920tiss3	(kBapop/kBmat_kBapop_ratio)*B19no20tiss3
+52	B1920tiss3 -> Bpb	tissue3on*fBtissue3_v1*kBtiss3exit*Vpb*max(0,B1920tiss3/Vtissue3-Bpb/Vpb*KBp3)
+53	B19no20tiss3 -> null	kBapop*B19no20tiss3*kBapop_cll
+54	B1920tiss3 -> null	kBapop*B1920tiss3*kBapop_cll
+55	restTpb + injection_effect + drug_effect <-> restTtiss3 + drug_effect + injection_effect	tissue3on*kTrexit*Vpb*((1+finj*injection_effect+fdrug*drug_effect)*restTpb/Vpb*KTrp3-restTtiss3/Vtissue3)
+56	actTtiss3 + RTXt3_ugperml + drugBtisskill3 + B1920tiss3 + BlinBtisskill3 -> actTtiss3 + RTXt3_ugperml + drugBtisskill3 + BlinBtisskill3	fBkill*kBkill*(drugBtisskill3+ BlinBtisskill3 + RTXt3_ugperml/(Kmkill_rtx/1000+RTXt3_ugperml))*B1920tiss3
+57	act0Tpb + injection_effect + drug_effect <-> act0Ttiss3 + injection_effect + drug_effect	tissue3on*act0on*kTrexit*Vpb*((1+finj*injection_effect+fdrug*drug_effect)*act0Tpb/Vpb*KTrp3-act0Ttiss3/Vtissue3)
+58	actTpb + injection_effect + drug_effect <-> actTtiss3 + drug_effect + injection_effect	tissue3on*kTaexit*Vpb*((1+fa0*(finj*injection_effect+fdrug*drug_effect))*actTpb/Vpb*KTrp3*fTap-actTtiss3/Vtissue3)
+59	act0Ttiss3 -> null	fTa0apop*kTaapop*act0Ttiss3
+60	act0Ttiss3 + drugTtissact3 + BlinTtissact3 <-> actTtiss3 + drugTtissact3 + BlinTtissact3	act0on*kTact*((drugTtissact3+BlinTtissact3)*act0Ttiss3-fTadeact*actTtiss3)
+61	act0Ttiss3 -> restTtiss3	act0on*fTa0deact*act0Ttiss3
+62	restTtiss3 + drugTtissact3 + BlinTtissact3 <-> actTtiss3 + drugTtissact3 + BlinTtissact3	kTact*((drugTtissact3+BlinTtissact3)*restTtiss3-fTadeact*actTtiss3)
+63	actTtiss3 -> act0Ttiss3 + actTtiss3	act0on*fTaprolif*kTprolif*actTtiss3
+64	drugTtissact3 + TDBt3_ugperml + restTtiss3 + B1920tiss3 -> drugTtissact3 + TDBt3_ugperml + restTtiss3 + B1920tiss3	0
+65	B19no20tiss3 + actTtiss3 + BlinBtisskill3 -> actTtiss3 + BlinBtisskill3	fBkill*kBkill*BlinBtisskill3*B19no20tiss3
+66	drugBtisskill3 + TDBt3_ugperml + actTtiss3 + B1920tiss3 -> drugBtisskill3 + TDBt3_ugperml + actTtiss3 + B1920tiss3	0
+67	B19no20tiss3 + B1920tiss3 + B19tiss3 -> B1920tiss3 + B19no20tiss3 + B19tiss3	0
+68	restTtiss -> null	fapop_v24*fTrapop*kTaapop*(Trpbref_perml*Vtissue*KTrp)*max(0,restTtiss/(Trpbref_perml*Vtissue*KTrp)-1)
+69	restTtiss2 -> null	fapop_v24*fTrapop*kTaapop*(Trpbref_perml*Vtissue2*KTrp2)*max(0,restTtiss2/(Trpbref_perml*Vtissue2*KTrp2)-1)
+70	actTtiss -> null	fapop_v24*kTaapop*(actTtiss+fAICD*actTtiss^2/(KTrp*Vtissue*Trpbref_perml))
+71	actTtiss2 -> null	fapop_v24*kTaapop*(actTtiss2+fAICD*actTtiss2^2/(Vtissue2*KTrp2*Trpbref_perml))
+72	restTtiss3 -> null	fapop_v24*fTrapop*kTaapop*(Trpbref_perml*Vtissue3*KTrp3)*max(0,restTtiss3/(Trpbref_perml*Vtissue3*KTrp3)-1)
+73	actTtiss3 -> null	fapop_v24*kTaapop*(actTtiss3+fAICD*actTtiss3^2/(Vtissue3*KTrp3*Trpbref_perml))
+74	null -> Bpb	tissue3on*fBtissue3_v1*kBprolif*kBapop_cll*Bpbref_perml*Vpb*(max(0, 1 -Bpb/(Bpbref_perml*Vpb)))^1
+75	Blinc_ug <-> null	Cl_blin*Blinc_ug/Vz_blin
+76	Bpb + BlinBpbkill + actTpb + Blinc_ngperml -> Bpb + BlinBpbkill + actTpb + Blinc_ngperml	0
+77	Blinc_ngperml + BlinTpbact + Bpb + restTpb -> Blinc_ngperml + BlinTpbact + Bpb + restTpb	0
+78	Btiss + Blint_ngperml + actTtiss + BlinBtisskill -> BlinBtisskill + Blint_ngperml + actTtiss + Btiss	0
+79	Btiss + restTtiss + Blint_ngperml + BlinTtissact -> Blint_ngperml + Btiss + BlinTtissact + restTtiss	0
+80	Blint2_ngperml + BlinTtissact2 + Btiss2 + restTtiss2 -> Blint2_ngperml + BlinTtissact2 + Btiss2 + restTtiss2	0
+81	Blint2_ngperml + BlinBtisskill2 + Btiss2 + actTtiss2 -> BlinBtisskill2 + Blint2_ngperml + Btiss2 + actTtiss2	0
+82	BlinBtisskill3 + Blint3_ngperml + actTtiss3 + B19tiss3 -> BlinBtisskill3 + Blint3_ngperml + actTtiss3 + B19tiss3	0
+83	BlinTtissact3 + Blint3_ngperml + restTtiss3 + B19tiss3 -> BlinTtissact3 + Blint3_ngperml + restTtiss3 + B19tiss3	0
+84	null -> B1920tiss3	kBprolif*KBp3*Bpbref_perml*Vtissue3*(max(0, 1 - B1920tiss3/(KBp3*Bpbref_perml*Vtissue3)))^1
+85	null -> B19no20tiss3	kBprolif*KBp3*Bpbref_perml*B19no20_B1920_ratio*Vtissue3*(max(0, 1 - B19no20tiss3/(KBp3*Bpbref_perml*B19no20_B1920_ratio*Vtissue3)))^1
+86	act0Ttumor -> restTtumor	act0on*fTa0deact*act0Ttumor
+87	act0Ttumor + drugTtumoract + BlinTtumoract <-> actTtumor + drugTtumoract + BlinTtumoract	act0on*kTact*((drugTtumoract+BlinTtumoract)*act0Ttumor-fTadeact*actTtumor)
+88	actTtumor -> act0Ttumor + actTtumor	act0on*fTaprolif*kTprolif*actTtumor
+89	restTtumor + drugTtumoract + BlinTtumoract <-> actTtumor + drugTtumoract + BlinTtumoract	kTact*((drugTtumoract+BlinTtumoract)*restTtumor-fTadeact*actTtumor)
+90	BlinTtumoract + Blintumor_ngperml + restTtumor + Btumor -> BlinTtumoract + Blintumor_ngperml + Btumor + restTtumor	0
+91	Blintumor_ngperml + Btumor + BlinBtumorkill + actTtumor -> Blintumor_ngperml + BlinBtumorkill + actTtumor + Btumor	0
+92	drugTtumoract + Btumor + restTtumor + TDBtumor_ugperml -> drugTtumoract + Btumor + TDBtumor_ugperml + restTtumor	0
+93	TDBtumor_ugperml + Btumor + actTtumor + drugBtumorkill -> TDBtumor_ugperml + Btumor + drugBtumorkill + actTtumor	0
+94	Btumor -> 2 Btumor	kBtumorprolif*Btumor + 0*kBprolif*KBptumor*Bpbref_perml*Vtumor*(max(0, 1 - Btumor/(KBptumor*Bpbref_perml*Vtumor)))^1
+95	Btumor -> null	0*fBprolif*kBprolif*Btumor
+96	Btumor + actTtumor + BlinBtumorkill + drugBtumorkill + RTXtumor_ugperml -> actTtumor + BlinBtumorkill + drugBtumorkill + RTXtumor_ugperml	fBkill*kBkill*(drugBtumorkill+ BlinBtumorkill + RTXtumor_ugperml/(Kmkill_rtx/1000+RTXtumor_ugperml))*Btumor
+97	actTtumor -> null	fapop_v24*kTaapop*(actTtumor+fAICD*actTtumor^2/(Vtumor*KTrptumor*Trpbref_perml))
+98	Bpb -> Btumor	Bcell_tumor_trafficking_on*tumor_on*fBexit*kTaexit*Vpb*max(0, Bpb/Vpb*KBptumor-Btumor/Vtumor)
+99	restTpb + drug_effect + injection_effect <-> restTtumor + drug_effect + injection_effect	tumor_on*kTrexit*Vpb*((1+finj*injection_effect+fdrug*drug_effect)*restTpb/Vpb*KTrptumor-restTtumor/Vtumor)
+100	actTpb + drug_effect + injection_effect <-> actTtumor + injection_effect + drug_effect	tumor_on*kTaexit*Vpb*((1+fa0*(finj*injection_effect+fdrug*drug_effect))*actTpb/Vpb*KTrptumor*fTap-actTtumor/Vtumor)
+101	act0Tpb + drug_effect + injection_effect <-> act0Ttumor + injection_effect + drug_effect	tumor_on*act0on*kTrexit*Vpb*((1+finj*injection_effect+fdrug*drug_effect)*act0Tpb/Vpb*KTrptumor-act0Ttumor/Vtumor)
+102	act0Ttumor -> null	fTa0apop*kTaapop*act0Ttumor
+103	restTtumor -> null	fapop_v24*fTrapop*kTaapop*(Trpbref_perml*Vtumor*KTrptumor)*max(0,restTtumor/(Trpbref_perml*Vtumor*KTrptumor)-1)
+104	TDBsc_ugperkg -> TDBc_ugperkg	kabs_TDB*fbio_TDB*TDBsc_ugperkg
+105	TDBsc_ugperkg -> null	kabs_TDB*(1-fbio_TDB)*TDBsc_ugperkg
+106	null -> TDBc_ugperml_AUC	TDBc_ugperml
+107	null -> IL6pb	kIL6prod*actTpb/Vpb*(Bpb_perml/Bpbref_perml)*((TDBc_ugperml*1000)^ndrugactT/(KdrugactT^ndrugactT+(TDBc_ugperml*1000)^ndrugactT)+Blinc_ngperml^ndrugactT_blin/(Blinc_ngperml^ndrugactT_blin+KdrugactT_blin^ndrugactT_blin))
+108	IL6pb -> null	log(2)/(thalfIL6/60/24)*IL6pb
+109	null -> IL6tiss	kIL6prod*actTtiss/Vtissue*(Btiss_perml/(Bpbref_perml*KBp))*((TDBt_ugperml*1000)^ndrugactT/(KdrugactT^ndrugactT+(TDBt_ugperml*1000)^ndrugactT)+Blint_ngperml^ndrugactT_blin/(Blint_ngperml^ndrugactT_blin+KdrugactT_blin^ndrugactT_blin))
+110	IL6tiss -> null	log(2)/(thalfIL6/60/24)*IL6tiss
+111	null -> IL6tiss2	kIL6prod*actTtiss2/Vtissue2*(Btiss2_perml/(Bpbref_perml*KBp2))*((TDBt2_ugperml*1000)^ndrugactT/(KdrugactT^ndrugactT+(TDBt2_ugperml*1000)^ndrugactT)+Blint2_ngperml^ndrugactT_blin/(Blint2_ngperml^ndrugactT_blin+KdrugactT_blin^ndrugactT_blin))
+112	IL6tiss2 -> null	log(2)/(thalfIL6/60/24)*IL6tiss2
+113	null -> IL6tiss3	kIL6prod*actTtiss3/Vtissue3*((B1920tiss3_perml/(Bpbref_perml*KBp3))*((TDBt3_ugperml*1000)^ndrugactT/(KdrugactT^ndrugactT+(TDBt3_ugperml*1000)^ndrugactT))+(B19tiss3_perml/(Bpbref_perml*KBp3*(1+B19no20_B1920_ratio)))*(Blint3_ngperml^ndrugactT_blin/(Blint3_ngperml^ndrugactT_blin+KdrugactT_blin^ndrugactT_blin)))
+114	IL6tiss3 -> null	log(2)/(thalfIL6/60/24)*IL6tiss3
+115	null -> IL6tumor	kIL6prod*actTtumor/Vtumor*(Btumor_perml/(Bpbref_perml*KBptumor))*((TDBtumor_ugperml*1000)^ndrugactT/(KdrugactT^ndrugactT+(TDBtumor_ugperml*1000)^ndrugactT)+Blintumor_ngperml^ndrugactT_blin/(Blintumor_ngperml^ndrugactT_blin+KdrugactT_blin^ndrugactT_blin))
+116	IL6tumor -> null	log(2)/(thalfIL6/60/24)*IL6tumor

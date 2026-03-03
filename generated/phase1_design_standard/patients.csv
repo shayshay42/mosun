@@ -1,0 +1,2 @@
+patient_id,Bpbo_perml,Bpbref_perml,Trpbo_perml,Trpbref_perml,kBtumorprolif,KBptumor,KTrptumor,BT_ratio_tumor_init,Btumor_perml_init
+1,250000.0,250000.0,500000.0,500000.0,0.025,6500.0,125.0,26.0,3250000000.0

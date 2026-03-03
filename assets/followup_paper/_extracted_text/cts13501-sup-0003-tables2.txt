@@ -1,0 +1,104 @@
+Table S 2: Summary of number of subjects represented in the QSP model virtual population. 
+DLBCL: Diffuse Large B-Cell Lymphoma; trFL: Transformed Follicular Lymphoma, FL: Follicular Lymphoma, Other subtypes include indications outside of DLBCL and FL (i.e. mantle cell lymphoma, marginal zone lymphoma, small-cell lymphocytic lymphoma, etc.)  
+Dosing Regimen
+Dose
+N
+All R/R NHL
+N
+DLBCL + trFL
+N
+FL
+N
+Other subtypes
+Fixed
+0.05mg
+1
+1
+-
+-
+0.2 mg
+1
+-
+1
+-
+0.4 mg
+3
+2
+-
+1
+0.8 mg
+2
+2
+-
+-
+1.6 mg
+6
+3
+2
+1
+1.2 mg
+4
+2
+2
+-
+2.0 mg
+3
+3
+-
+-
+2.8 mg
+7
+3
+3
+1
+Step-Up
+0.4/1.0/2.8 mg
+6
+3
+2
+1
+0.8/2.0/4.2 mg
+14
+9
+3
+2
+1.0/1.0/3.0 mg
+1
+1
+-
+-
+1.0/2.0/6.0 mg
+5
+3
+1
+1
+0.8/2.0/6.0 mg
+25
+13
+9
+3
+1.0/2.0/9.0 mg
+5
+2
+3
+-
+1.0/2.0/13.5 mg
+50
+20
+24
+6
+1.0/2.0/20.0 mg
+6
+5
+-
+1
+1.0/2.0/27.0 mg
+1
+1
+-
+-
+TOTAL 
+140
+73
+50
+17

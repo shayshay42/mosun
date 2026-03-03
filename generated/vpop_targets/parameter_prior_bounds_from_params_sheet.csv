@@ -1,0 +1,26 @@
+group,name,prior_type,cyno_lb,cyno_ub,cyno_value,human_value,all_value,dlbcl_value,comment,reference
+,fTact,estimated,0.1,0.4,0.25,0.25,0.25,0.25,Estimated,
+,KmBT_act,estimated,0.4,1.0,0.716,0.716,0.716,0.716,Estimated,
+,ndrugactT,estimated,0.7,0.9,0.8,0.8,0.8,0.8,Estimated,
+,S,estimated,1.3,1.5,1.4,1.4,1.4,1.4,Estimated,
+,KdrugactT,estimated,100.0,300.0,130.083,130.083,130.083,130.083,Estimated,
+,KmTB_kill,estimated,0.6,0.9,0.75,0.75,0.75,0.75,Estimated,
+,fKmTB_kill,estimated,8.0,12.0,10.0,10.0,10.0,10.0,Estimated,
+,nkill,estimated,0.9,1.1,1.027,1.027,1.027,1.027,Estimated,
+,KdrugB,estimated,0.5,3.906,1.302,1.302,1.302,1.302,Estimated,
+B-cells,kBapop,estimated,0.01,0.04,0.02,0.02,0.02,0.02,Estimated (Lit.),[20-22]
+,kBkill,estimated,225.0,500.0,275.189,275.189,275.189,275.189,Estimated,
+,fBkill,estimated,0.005,0.4,0.1,0.1,0.1,0.1,Estimated,
+,kBprolif,estimated,0.01,0.06,0.05,0.05,0.05,0.05,Estimated,
+,kTaexit,estimated,0.1,0.369,0.123,0.123,0.123,0.123,Estimated,
+,kTact,estimated,5.0,10.0,9.828,9.828,9.828,9.828,Estimated,
+,fTadeact,estimated,0.0016666666666666668,0.1,0.005,0.005,0.005,0.005,Estimated,
+,fTap,estimated,1.2576666666666667,10.0,3.773,3.773,3.773,3.773,Estimated,
+,kTaapop,estimated,0.02033333333333333,0.183,0.061,0.061,0.061,0.061,Estimated,
+,fTaprolif,estimated,0.702,6.318,2.106,2.106,2.106,2.106,Estimated,
+,fTrapop,estimated,0.06666666666666667,1.0,0.2,0.2,0.2,0.2,Estimated (Lit.),[20-22]
+,kTrexit,estimated,0.01,0.09,0.045,0.045,0.045,0.045,Estimated (Lit.),"[17, 31, 32]"
+,fa0,estimated,0.001,0.01,0.002,0.002,0.002,0.002,Estimated,
+,fAICD,estimated,1.0,4.5,1.497,1.497,1.497,1.497,Estimated,
+,fTa0deact,estimated,0.001,0.1,0.001,0.001,0.001,0.001,Estimated,
+,fTa0apop,estimated,0.673,5.0,2.019,2.019,2.019,2.019,Estimated,

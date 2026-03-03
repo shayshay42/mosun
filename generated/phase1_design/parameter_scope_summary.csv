@@ -1,0 +1,79 @@
+GROUP,NAME,UNITS,DLBCL,Cyno_LB,Cyno_UB,has_cyno_bounds,comment,is_fixed_comment,is_estimated_comment,is_sampled_in_phase1_design
+TDB: T-cell act,VmT,unitless,0.9,,,False,Fixed (in vitro data),True,False,False
+,fTact,unitless,0.25,0.1,0.4,True,Estimated,False,True,False
+,KmBT_act,unitless,0.716,0.4,1.0,True,Estimated,False,True,False
+,ndrugactT,unitless,0.8,0.7,0.9,True,Estimated,False,True,False
+,S,unitless,1.4,1.3,1.5,True,Estimated,False,True,False
+,KdrugactT,ng/ml,130.083,100.0,300.0,True,Estimated,False,True,False
+TDB: B-cell kill,VmB,unitless,0.95,,,False,Fixed (in vitro data),True,False,False
+,KmTB_kill,unitless,0.75,0.6,0.9,True,Estimated,False,True,False
+,fKmTB_kill,unitless,10.0,8.0,12.0,True,Estimated,False,True,False
+,nkill,unitless,1.027,0.9,1.1,True,Estimated,False,True,False
+,KdrugB,ng/ml,1.302,0.5,3.906,True,Estimated,False,True,False
+TDB PK,Cl_tdb,ml/kg/day,5.4,,,False,Cyno PK fit (or scaled),False,False,False
+,Cld_tdb,ml/kg/day,24.17,,,False,Cyno PK fit (or scaled),False,False,False
+,Vc_tdb,ml/kg,36.78,,,False,Cyno PK fit (or scaled),False,False,False
+,Vp_tdb,ml/kg,173.47,,,False,Cyno PK fit (or scaled),False,False,False
+Blin: T-cell act,KmBT_act_blin,unitless,0.716,,,False,The same as 'KmBT_act',False,False,False
+,ndrugactT_blin,unitless,1.0,,,False,Fixed,True,False,False
+,KdrugactT_blin,ng/ml,0.1,,,False,Fixed (Lit.),True,False,False
+Blin: B-cell kill,KmTB_kill_blin,unitless,0.75,,,False,The same as 'KmTB_kill',False,False,False
+,nkill_blin,unitless,1.027,,,False,The same as 'nkill',False,False,False
+,KdrugB_blin,ng/ml,0.15,,,False,Fixed (Lit.),True,False,False
+Blin PK,Cl_blin,ml/m2/day,22300.0,,,False,Fixed (Lit.),True,False,False
+,Vz_blin,ml/m2,1610.0,,,False,Fixed (Lit.),True,False,False
+B-cells,kBapop,1/day,0.02,0.01,0.04,True,Estimated (Lit.),False,True,False
+,kBkill,1/day,275.189,225.0,500.0,True,Estimated,False,True,False
+,fBkill,unitless,0.1,0.005,0.4,True,Estimated,False,True,False
+,kBprolif,1/day,0.05,0.01,0.06,True,Estimated,False,True,False
+T-cells,kTprolif,unitless,0.7,,,False,Fixed,True,False,False
+,kTaexit,1/day,0.123,0.1,0.369,True,Estimated,False,True,False
+,kTact,1/day,9.828,5.0,10.0,True,Estimated,False,True,False
+,fTadeact,unitless,0.005,0.0016666666666666668,0.1,True,Estimated,False,True,False
+,fTap,unitless,3.773,1.2576666666666667,10.0,True,Estimated,False,True,False
+,kTaapop,1/day,0.061,0.02033333333333333,0.183,True,Estimated,False,True,False
+,fTaprolif,1/day,2.106,0.702,6.318,True,Estimated,False,True,False
+,fTrapop,unitless,0.2,0.06666666666666667,1.0,True,Estimated (Lit.),False,True,False
+,kTrexit,1/day,0.045,0.01,0.09,True,Estimated (Lit.),False,True,False
+,fdrug,unitless,6.3839,,,False,Estimated,False,True,False
+,fa0,unitless,0.002,0.001,0.01,True,Estimated,False,True,False
+,fAICD,unitless,1.497,1.0,4.5,True,Estimated,False,True,False
+,fTa0deact,1/day,0.001,0.001,0.1,True,Estimated,False,True,False
+,fTa0apop,unitless,2.019,0.673,5.0,True,Estimated,False,True,False
+,finj,unitless,1.0,,,False,Estimated,False,True,False
+PB Physiology,Trpbref_perml,cells/ml,500000.0,,,False,Fixed (Data & Lit.),True,False,False
+,Bpbref_perml,cells/ml,500000.0,,,False,Fixed (Data & Lit.),True,False,False
+,Vpb,ml,5000.0,,,False,Fixed (Lit.),True,False,False
+Spleen Physiology,Trtiss_perml,cells/ml,100000000.0,,,False,Fixed (Data & Lit.),True,False,False
+,Btiss_perml,cells/ml,166500000.0,,,False,Fixed (Data & Lit.),True,False,False
+,Vtissue,ml,210.0,,,False,Fixed (Lit.),True,False,False
+,KTrp,unitless,200.0,,,False,Calculated,False,False,False
+,KBp,unitless,333.0,,,False,Calculated,False,False,False
+,Kp,unitless,0.14,,,False,Fixed (Lit.),True,False,False
+LNs Physiology,Trtiss2_perml,cells/ml,95000000.0,,,False,Fixed (Data & Lit.),True,False,False
+,Btiss2_perml,cells/ml,95000000.0,,,False,Fixed (Data & Lit.),True,False,False
+,Vtissue2,ml,400.0,,,False,Fixed (Lit.),True,False,False
+,KTrp2,unitless,190.0,,,False,Calculated,False,False,False
+,KBp2,unitless,190.0,,,False,Calculated,False,False,False
+,Kp2,unitless,0.07,,,False,Fixed (Lit.),True,False,False
+BM Physiology,Trtiss3_perml,cells/ml,30000000.0,,,False,Fixed (Data & Lit.),True,False,False
+,B1920tiss3_perml,cells/ml,40000000.0,,,False,Fixed (Data & Lit.),True,False,False
+,B19no20tiss3_perml,cells/ml,10000000.0,,,False,Fixed (Data & Lit.),True,False,False
+,B19tiss3_perml,cells/ml,50000000.0,,,False,Fixed (Data & Lit.),True,False,False
+,Vtissue3,ml,500.0,,,False,Fixed (Lit.),True,False,False
+,KTrp3,unitless,60.0,,,False,Calculated,False,False,False
+,KBp3,unitless,80.0,,,False,Calculated,False,False,False
+,Kp3,unitless,0.07,,,False,Fixed (Lit.),True,False,False
+,kBmat_kBapop_ratio,unitless,0.25,,,False,Calculated,False,False,False
+,B19no20_B1920_ratio,unitless,0.25,,,False,Fixed (Lit.),True,False,False
+Tumor Physiology,tumor_on,unitless,1.0,,,False,Fixed,True,False,False
+,Trtumor_perml,cells/ml,62500000.0,,,False,Fixed (Internal Data & Lit.),True,False,False
+,Btumor_perml,cells/ml,3250000000.0,,,False,Fixed (Internal Data & Lit.),True,False,False
+,Vtumor,ml,49.6,,,False,Estimated,False,True,False
+,KTrptumor,unitless,125.0,,,False,Calculated,False,False,True
+,KBptumor,unitless,6500.0,,,False,Calculated,False,False,True
+,Kptumor,unitless,0.05,,,False,Fixed (Data & Lit.),True,False,False
+,kBtumorprolif,1/day,0.025,,,False,Fixed (Data & Lit.),True,False,True
+Cytokine,kIL6prod,pg/day,14.0,,,False,Estimated,False,True,False
+,IL6_tiss_contribution,unitless,0.0004,,,False,Estimated,False,True,False
+,thalfIL6,min,20.0,,,False,Fixed,True,False,False

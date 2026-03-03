@@ -1,0 +1,25 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Julia local state
+*.ji
+
+# Generated runtime outputs (keep core exported model tables/bundles under generated/)
+generated/figures/
+generated/vpop_pruning/
+generated/tmp_*/
+generated/phase1_julia/
+generated/cycle1_loss/
+generated/gradient_checks/
+generated/solver_trials/
