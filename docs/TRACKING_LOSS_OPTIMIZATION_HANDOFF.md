@@ -77,6 +77,10 @@ Default output directory:
 
 - `generated/figures/optimization/vpop_tracking_nmcd/`
 
+Note:
+
+- `generated/figures/` is gitignored. To continue an in-progress run on another machine, copy the summary checkpoint file manually (or set `OUT_DIR` to a tracked location).
+
 ## Resume / checkpoint controls
 
 You can tune checkpointing and progress logs without editing code:
@@ -94,6 +98,14 @@ OPTVPOP_PROGRESS_EVERY=1 \
 OPTVPOP_CHECKPOINT_EVERY=1 \
 OPTVPOP_MAX_PATIENTS=20 \
 ./scripts/run_vpop_tracking_nmcd.sh
+```
+
+Manual checkpoint copy example:
+
+```bash
+rsync -avz \
+  generated/figures/optimization/vpop_tracking_nmcd/vpop_tracking_nmcd_summary.csv \
+  <other-machine>:<repo>/generated/figures/optimization/vpop_tracking_nmcd/
 ```
 
 ## Where we left off
