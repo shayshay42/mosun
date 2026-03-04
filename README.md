@@ -113,6 +113,7 @@ julia --project=./julia julia/optimize_two_cycle_population.jl
 For model history, translation decisions, fidelity test context, dosing semantics, AD/optimization setup, and VPop design details, see:
 
 - `docs/TECHNICAL_SUMMARY.md`
+- `docs/TRACKING_LOSS_OPTIMIZATION_HANDOFF.md` (branch handoff + resume runbook for tracking-loss optimization)
 
 ## GitHub Push Checklist
 
