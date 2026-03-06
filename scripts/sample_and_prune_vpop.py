@@ -88,16 +88,19 @@ def regimen_events_from_plan(plan: dict[str, Any]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def load_param_defaults(params_xlsx: Path) -> tuple[pd.DataFrame, dict[str, float], float, float, float]:
+def load_param_defaults(params_xlsx: Path) -> tuple[pd.DataFrame, dict[str, float], float, float, float, float, float]:
     ptab = pd.read_excel(params_xlsx, sheet_name="Sheet1")
     dlbcl = ptab[ptab["DLBCL"].notna()][["NAME", "DLBCL"]].copy()
     dlbcl.columns = ["name", "value"]
     dmap = {str(r["name"]): float(r["value"]) for _, r in dlbcl.iterrows()}
 
-    base_bpbo = float(dmap.get("Bpbo_perml", 250_000.0))
-    base_trpbo = float(dmap.get("Trpbo_perml", 500_000.0))
+    # Some parameter sheets only provide *_ref values for DLBCL; use them as bo fallbacks.
+    base_bpbo = float(dmap.get("Bpbo_perml", dmap.get("Bpbref_perml", 250_000.0)))
+    base_bpbref = float(dmap.get("Bpbref_perml", base_bpbo))
+    base_trpbo = float(dmap.get("Trpbo_perml", dmap.get("Trpbref_perml", 500_000.0)))
+    base_trpbref = float(dmap.get("Trpbref_perml", base_trpbo))
     base_btumor_perml = float(dmap.get("Btumor_perml", 3.25e9))
-    return dlbcl, dmap, base_bpbo, base_trpbo, base_btumor_perml
+    return dlbcl, dmap, base_bpbo, base_bpbref, base_trpbo, base_trpbref, base_btumor_perml
 
 
 def get_hard_prior_bounds(targets_json: dict[str, Any], spread_mode: str) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
@@ -165,7 +168,9 @@ def sample_candidates(
     n_candidates: int,
     seed: int,
     base_bpbo: float,
+    base_bpbref: float,
     base_trpbo: float,
+    base_trpbref: float,
     base_btumor_perml: float,
     k_bounds: tuple[float, float],
     bt_bounds: tuple[float, float],
@@ -187,9 +192,9 @@ def sample_candidates(
         row: dict[str, float | int] = {
             "patient_id": i,
             "Bpbo_perml": base_bpbo,
-            "Bpbref_perml": base_bpbo,
+            "Bpbref_perml": base_bpbref,
             "Trpbo_perml": base_trpbo,
-            "Trpbref_perml": base_trpbo,
+            "Trpbref_perml": base_trpbref,
             "kBtumorprolif": k_btumor,
             "KBptumor": kbptumor,
             "KTrptumor": ktrptumor,
@@ -617,6 +622,7 @@ def main() -> None:
     parser.add_argument("--n-select", type=int, default=0)
     parser.add_argument("--n-random-subsets", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--subset-seed", type=int, default=0, help="RNG seed for random subset search (default: seed+17)")
     parser.add_argument("--spread-mode", choices=["primary", "sensitivity"], default="primary")
     parser.add_argument("--julia-project", type=str, default="")
     parser.add_argument("--julia-bin", type=str, default="")
@@ -652,7 +658,7 @@ def main() -> None:
     design_dir.mkdir(parents=True, exist_ok=True)
     sim_dir.mkdir(parents=True, exist_ok=True)
 
-    dlbcl_overrides, _dmap, base_bpbo, base_trpbo, base_btumor = load_param_defaults(repo / args.params_xlsx)
+    dlbcl_overrides, _dmap, base_bpbo, base_bpbref, base_trpbo, base_trpbref, base_btumor = load_param_defaults(repo / args.params_xlsx)
     k_bounds, bt_bounds, spread_bounds = get_hard_prior_bounds(targets_json, args.spread_mode)
 
     default_extra_names = [
@@ -675,7 +681,9 @@ def main() -> None:
         n_candidates=n_candidates,
         seed=seed,
         base_bpbo=base_bpbo,
+        base_bpbref=base_bpbref,
         base_trpbo=base_trpbo,
+        base_trpbref=base_trpbref,
         base_btumor_perml=base_btumor,
         k_bounds=k_bounds,
         bt_bounds=bt_bounds,
@@ -710,11 +718,13 @@ def main() -> None:
     regimen_meta = build_regimen_metadata(reg_events)
     shape_cfg = build_shape_config(feature_table, regimen_meta, objective_defaults)
 
+    subset_seed = args.subset_seed or (seed + 17)
+
     best_idx, best_score, best_details, trace = random_subset_search(
         feature_table=feature_table,
         n_select=n_select,
         n_draws=n_draws,
-        seed=seed + 17,
+        seed=subset_seed,
         targets=targets,
         crs_thresholds=crs_thresholds,
         shape_cfg=shape_cfg,
@@ -746,6 +756,7 @@ def main() -> None:
             "n_candidates": n_candidates,
             "n_select": n_select,
             "seed": seed,
+            "subset_seed": subset_seed,
             "n_random_subsets": n_draws,
             "spread_mode": args.spread_mode,
             "julia_project": args.julia_project,

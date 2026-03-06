@@ -64,8 +64,11 @@ def main() -> None:
 
     dmap = {str(r["name"]): float(r["value"]) for _, r in dlbcl.iterrows()}
 
-    bpbo = 250_000.0
-    trpbo = 500_000.0
+    # DLBCL sheet may include *_ref without explicit *_bo; use *_ref as bo fallback.
+    bpbo = float(dmap.get("Bpbo_perml", dmap.get("Bpbref_perml", 250_000.0)))
+    bpbref = float(dmap.get("Bpbref_perml", bpbo))
+    trpbo = float(dmap.get("Trpbo_perml", dmap.get("Trpbref_perml", 500_000.0)))
+    trpbref = float(dmap.get("Trpbref_perml", trpbo))
     kbptumor = float(dmap["KBptumor"])
     ktrptumor = float(dmap["KTrptumor"])
     kbtumorprolif = float(dmap["kBtumorprolif"])
@@ -77,9 +80,9 @@ def main() -> None:
             {
                 "patient_id": 1,
                 "Bpbo_perml": bpbo,
-                "Bpbref_perml": bpbo,
+                "Bpbref_perml": bpbref,
                 "Trpbo_perml": trpbo,
-                "Trpbref_perml": trpbo,
+                "Trpbref_perml": trpbref,
                 "kBtumorprolif": kbtumorprolif,
                 "KBptumor": kbptumor,
                 "KTrptumor": ktrptumor,
@@ -101,4 +104,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

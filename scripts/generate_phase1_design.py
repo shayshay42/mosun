@@ -62,7 +62,9 @@ def sample_patients(
     seed: int,
     tumor_burden_spread: float,
     base_bpbo: float,
+    base_bpbref: float,
     base_trpbo: float,
+    base_trpbref: float,
     base_btumor_perml: float,
 ) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
@@ -84,9 +86,9 @@ def sample_patients(
             {
                 "patient_id": i,
                 "Bpbo_perml": base_bpbo,
-                "Bpbref_perml": base_bpbo,
+                "Bpbref_perml": base_bpbref,
                 "Trpbo_perml": base_trpbo,
-                "Trpbref_perml": base_trpbo,
+                "Trpbref_perml": base_trpbref,
                 "kBtumorprolif": k_btumor,
                 "KBptumor": kbptumor,
                 "KTrptumor": ktrptumor,
@@ -118,10 +120,11 @@ def main() -> None:
     ptab = pd.read_excel(params_path, sheet_name="Sheet1")
     dlbcl = {str(r["NAME"]): r["DLBCL"] for _, r in ptab.iterrows() if pd.notna(r.get("DLBCL"))}
 
-    # Follow-up table provides tumor quantities, while circulating B/T baselines are
-    # patient-specific. Use DLBCL reference defaults from the model when absent.
-    base_bpbo = float(dlbcl.get("Bpbo_perml", 250_000.0))
-    base_trpbo = float(dlbcl.get("Trpbo_perml", 500_000.0))
+    # Follow-up table may provide *_ref values only; use them as bo fallbacks when needed.
+    base_bpbo = float(dlbcl.get("Bpbo_perml", dlbcl.get("Bpbref_perml", 250_000.0)))
+    base_bpbref = float(dlbcl.get("Bpbref_perml", base_bpbo))
+    base_trpbo = float(dlbcl.get("Trpbo_perml", dlbcl.get("Trpbref_perml", 500_000.0)))
+    base_trpbref = float(dlbcl.get("Trpbref_perml", base_trpbo))
     base_btumor_perml = float(dlbcl.get("Btumor_perml", 3.25e9))
 
     reg_df = regimen_events()
@@ -130,7 +133,9 @@ def main() -> None:
         seed=args.seed,
         tumor_burden_spread=args.tumor_burden_spread,
         base_bpbo=base_bpbo,
+        base_bpbref=base_bpbref,
         base_trpbo=base_trpbo,
+        base_trpbref=base_trpbref,
         base_btumor_perml=base_btumor_perml,
     )
 
