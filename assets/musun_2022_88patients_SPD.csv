@@ -1,89 +1,89 @@
-patientID,SPD
-1,81.681347
-2,68.682095
-3,58.245946
-4,33.196908
-5,4.863340
-6,-10.579427
-7,-18.060915
-8,-21.552971
-9,-29.252394
-10,-33.981372
-11,-42.500904
-12,-51.151073
-13,-50.904507
-14,-53.264733
-15,-54.583400
-16,-54.476612
-17,-65.009444
-18,-64.466344
-19,-65.288485
-20,-67.963107
-21,-69.943720
-22,-72.278601
-23,-78.378123
-24,-79.272681
-25,-80.487647
-26,-84.157756
-27,-84.778455
-28,-87.429654
-29,-88.522397
-30,-88.948300
-31,-90.227311
-32,-91.250389
-33,-91.327906
-34,-93.158827
-35,-95.166480
-36,-95.311653
-37,-95.414622
-38,-95.963527
-39,-98.799357
-40,-100.000000
-41,-100.000000
-42,-100.000000
-43,-100.000000
-44,-100.000000
-45,-100.000000
-46,-100.000000
-47,-100.000000
-48,-100.000000
-49,-100.000000
-50,-100.000000
-51,-100.000000
-52,-100.000000
-53,-100.000000
-54,-100.000000
-55,-100.000000
-56,-100.000000
-57,-100.000000
-58,-100.000000
-59,-100.000000
-60,-100.000000
-61,-100.000000
-62,-100.000000
-63,-100.000000
-64,-100.000000
-65,-100.000000
-66,-100.000000
-67,-100.000000
-68,-100.000000
-69,-100.000000
-70,-100.000000
-71,-100.000000
-72,-100.000000
-73,-100.000000
-74,-100.000000
-75,-100.000000
-76,-100.000000
-77,-100.000000
-78,-100.000000
-79,-100.000000
-80,-100.000000
-81,-100.000000
-82,-100.000000
-83,-100.000000
-84,-100.000000
-85,-100.000000
-86,-100.000000
-87,-100.000000
-88,-100.000000
+patientID,SPD,scenario,regimen_label,dose_days,dose_mg,cycle_length_days,n_cycles,horizon_days,endpoint
+1,81.681347,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+2,68.682095,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+3,58.245946,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+4,33.196908,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+5,4.863340,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+6,-10.579427,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+7,-18.060915,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+8,-21.552971,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+9,-29.252394,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+10,-33.981372,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+11,-42.500904,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+12,-51.151073,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+13,-50.904507,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+14,-53.264733,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+15,-54.583400,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+16,-54.476612,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+17,-65.009444,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+18,-64.466344,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+19,-65.288485,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+20,-67.963107,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+21,-69.943720,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+22,-72.278601,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+23,-78.378123,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+24,-79.272681,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+25,-80.487647,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+26,-84.157756,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+27,-84.778455,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+28,-87.429654,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+29,-88.522397,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+30,-88.948300,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+31,-90.227311,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+32,-91.250389,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+33,-91.327906,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+34,-93.158827,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+35,-95.166480,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+36,-95.311653,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+37,-95.414622,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+38,-95.963527,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+39,-98.799357,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+40,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+41,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+42,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+43,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+44,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+45,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+46,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+47,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+48,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+49,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+50,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+51,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+52,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+53,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+54,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+55,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+56,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+57,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+58,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+59,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+60,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+61,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+62,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+63,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+64,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+65,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+66,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+67,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+68,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+69,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+70,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+71,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+72,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+73,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+74,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+75,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+76,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+77,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+78,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+79,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+80,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+81,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+82,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+83,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+84,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+85,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+86,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+87,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
+88,-100.000000,human_phase1_stepup_q3w_8cycles,C1D1 1mg; C1D8 2mg; C1D15 60mg; C2D1 60mg; C3D1+ 30mg q3w,"0,7,14,21,42,63,84,105,126,147","1,2,60,60,30,30,30,30,30,30",21,8,168,best_SPD_percent_change_over_horizon
