@@ -12,18 +12,6 @@ function smoothmax(v::Vector{Float64}, tau::Float64)
     return m + tau * log(sum(exp.((v .- m) ./ tau)))
 end
 
-function eval_symbol(mdl, u::Vector{Float64}, t::Float64, name::String)
-    ns = length(mdl.state_names)
-    np = length(mdl.pvals)
-    z = copy(mdl.z)
-    z[1:ns] .= u
-    z[ns+1:ns+np] .= mdl.pvals
-    for r in mdl.repeated_rule_exprs
-        z[r.lhs_idx] = Base.invokelatest(r.fn, z, t)
-    end
-    return z[mdl.name_to_idx[name]]
-end
-
 repo_root = TCellEngagerQSP.REPO_ROOT
 design_dir_default = joinpath(repo_root, "generated", "phase1_design")
 design_dir_env = get(ENV, "PHASE1_DESIGN_DIR", design_dir_default)
@@ -118,8 +106,9 @@ for prow in eachrow(patients[1:min(end, max_patients), :])
 
     try
         mdl = TCellEngagerQSP.build_model_with_variant_ids(Int[], pnames, pvals)
-        target_idx = mdl.state_to_idx["TDBc_ugperkg"]
-        btumor_idx = mdl.state_to_idx["Btumor"]
+        state_to_idx = TCellEngagerQSP.canonical_state_to_idx(mdl)
+        target_idx = state_to_idx["TDBc_ugperkg"]
+        btumor_idx = state_to_idx["Btumor"]
 
         for spec in regimen_specs
             reg = spec.regimen
@@ -131,14 +120,7 @@ for prow in eachrow(patients[1:min(end, max_patients), :])
                 rhs_fun = TCellEngagerQSP.rhs!
                 ctx = nothing
                 if engine == :legacy
-                    ctx = TCellEngagerQSP.SimContext(
-                        copy(mdl.z),
-                        mdl.pvals,
-                        mdl.repeated_rule_exprs,
-                        mdl.rate_fns,
-                        mdl.stoich,
-                        TCellEngagerQSP.InfusionEvent[],
-                    )
+                    ctx = TCellEngagerQSP.make_legacy_context(mdl, TCellEngagerQSP.InfusionEvent[])
                     rhs_fun = TCellEngagerQSP.rhs!
                 else
                     ctx = TCellEngagerQSP.CanonicalSimContext(
@@ -172,7 +154,7 @@ for prow in eachrow(patients[1:min(end, max_patients), :])
                     end
                 end
 
-                u0 = copy(mdl.u0)
+                u0 = copy(TCellEngagerQSP.canonical_u0(mdl))
                 if dose_at_t0 != 0.0
                     u0[target_idx] += dose_at_t0
                 end
@@ -201,7 +183,7 @@ for prow in eachrow(patients[1:min(end, max_patients), :])
                     t = Float64(sol.t[i])
                     u = Float64.(sol.u[i])
                     if t <= tox_window_days + 1e-12
-                        push!(il6_vals, eval_symbol(mdl, u, t, "IL6combo"))
+                        push!(il6_vals, TCellEngagerQSP.eval_symbol(mdl, u, t, "IL6combo"))
                     end
                     if isapprox(t, horizon_days; atol = 1e-12, rtol = 0.0)
                         bt_end = u[btumor_idx]

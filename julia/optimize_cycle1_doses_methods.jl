@@ -7,11 +7,14 @@ using JSON3
 using Optim
 using Printf
 using Random
+using RuntimeGeneratedFunctions
 using SciMLBase
 using SciMLSensitivity
 
 include(joinpath(@__DIR__, "src", "TCellEngagerQSP.jl"))
 using .TCellEngagerQSP
+
+RuntimeGeneratedFunctions.init(@__MODULE__)
 
 function smoothmax(v::AbstractVector, tau::Real)
     m = maximum(v)
@@ -107,28 +110,30 @@ function build_ad_rhs_no_cast(mdl)
 
     np = length(mdl.pvals)
     zlen = length(mdl.name_to_idx)
-    pvals = copy(mdl.pvals)
-
     fexpr = quote
-        let pvals0 = $pvals
-            (du, u, p, t) -> begin
-                ns = length(u)
-                T = eltype(u)
-                z = Vector{T}(undef, $zlen)
-                @inbounds begin
-                    z[1:ns] .= u
-                    z[ns+1:ns+$np] .= T.(pvals0)
-                    $(repeated_assign_exprs...)
+        (du, u, pvals, t) -> begin
+            ns = length(u)
+            T = eltype(u)
+            z = Vector{T}(undef, $zlen)
+            @inbounds begin
+                z[1:ns] .= u
+                z[ns+1:ns+$np] .= pvals
+                $(repeated_assign_exprs...)
 
-                    fill!(du, zero(T))
-                    $(reaction_blocks...)
-                end
-                return nothing
+                fill!(du, zero(T))
+                $(reaction_blocks...)
             end
+            return nothing
         end
     end
 
-    return Base.invokelatest(Core.eval, TCellEngagerQSP, fexpr)
+    rhs_rgf = RuntimeGeneratedFunction(
+        TCellEngagerQSP,
+        TCellEngagerQSP,
+        TCellEngagerQSP.normalize_function_expr(fexpr),
+    )
+    pvals0 = copy(mdl.pvals)
+    return (du, u, p, t) -> rhs_rgf(du, u, pvals0, t)
 end
 
 function build_symbol_observer_no_cast(mdl, symbol_name::String)
@@ -137,8 +142,6 @@ function build_symbol_observer_no_cast(mdl, symbol_name::String)
     zlen = length(name_to_idx)
     target_idx = name_to_idx[symbol_name]
     np = length(mdl.pvals)
-    pvals = copy(mdl.pvals)
-
     repeated_assign_exprs = Any[]
     for (lhs_idx, rhs0) in repeated_rule_defs
         rhs =
@@ -152,21 +155,25 @@ function build_symbol_observer_no_cast(mdl, symbol_name::String)
     end
 
     fexpr = quote
-        let pvals0 = $pvals
-            (u, t) -> begin
-                ns = length(u)
-                T = eltype(u)
-                z = Vector{T}(undef, $zlen)
-                @inbounds begin
-                    z[1:ns] .= u
-                    z[ns+1:ns+$np] .= T.(pvals0)
-                    $(repeated_assign_exprs...)
-                end
-                return z[$target_idx]
+        (u, t, pvals) -> begin
+            ns = length(u)
+            T = eltype(u)
+            z = Vector{T}(undef, $zlen)
+            @inbounds begin
+                z[1:ns] .= u
+                z[ns+1:ns+$np] .= pvals
+                $(repeated_assign_exprs...)
             end
+            return z[$target_idx]
         end
     end
-    return Base.invokelatest(Core.eval, TCellEngagerQSP, fexpr)
+    obs_rgf = RuntimeGeneratedFunction(
+        TCellEngagerQSP,
+        TCellEngagerQSP,
+        TCellEngagerQSP.normalize_function_expr(fexpr),
+    )
+    pvals0 = copy(mdl.pvals)
+    return (u, t) -> obs_rgf(u, t, pvals0)
 end
 
 function build_problem(; patient_id::Int = 1)
@@ -297,7 +304,7 @@ function simulate_cycle(prob::CycleOptProblem, doses_mg::AbstractVector{T}; save
     seg1_save = save_trajectory ? collect(0.0:0.1:7.0) : vcat(prob.tox_grid, [7.0])
     sol1 = solve_segment(prob, u1, (0.0, 7.0), seg1_save; sensealg = sensealg)
     il6_vals = [
-        Base.invokelatest(prob.il6_obs_fun, sol1.u[i], sol1.t[i]) for i in eachindex(sol1.t)
+        prob.il6_obs_fun(sol1.u[i], sol1.t[i]) for i in eachindex(sol1.t)
         if Float64(sol1.t[i]) <= prob.tox_window_days + 1e-12
     ]
     tox_proxy = smoothmax(il6_vals, prob.tox_tau)
@@ -331,7 +338,7 @@ function simulate_cycle(prob::CycleOptProblem, doses_mg::AbstractVector{T}; save
             u = sol.u[i]
             push!(t_all, t)
             push!(bt_all, Float64(u[prob.bt_idx]))
-            push!(il6_all, Float64(Base.invokelatest(prob.il6_obs_fun, u, sol.t[i])))
+            push!(il6_all, Float64(prob.il6_obs_fun(u, sol.t[i])))
         end
     end
     return (; tox_proxy = tox_proxy, tumor_proxy = tumor_proxy, loss = loss, t = t_all, btumor = bt_all, il6combo = il6_all)

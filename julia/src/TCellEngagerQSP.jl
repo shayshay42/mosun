@@ -7,6 +7,13 @@ using SciMLBase
 using DifferentialEquations
 using Sundials
 using ModelingToolkit
+using RuntimeGeneratedFunctions
+using SparseArrays
+
+RuntimeGeneratedFunctions.init(@__MODULE__)
+
+include(joinpath(@__DIR__, "MosunModelCore.jl"))
+using .MosunModelCore
 
 const REPO_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 const MODEL_TABLES_DIR = joinpath(REPO_ROOT, "generated", "model_tables")
@@ -48,7 +55,11 @@ mutable struct CanonicalSimContext
     z::Vector{Float64}
     pvals::Vector{Float64}
     infusions::Vector{InfusionEvent}
+    cache::MosunModelCore.MosunObservablesCache
 end
+
+CanonicalSimContext(z::Vector{Float64}, pvals::Vector{Float64}, infusions::Vector{InfusionEvent}) =
+    CanonicalSimContext(z, pvals, infusions, MosunModelCore.zero_observables_cache())
 
 struct ModelArtifacts
     state_names::Vector{String}
@@ -76,6 +87,18 @@ const PK_VALIDATION2_DATA = Ref{PKDataset}()
 const SOLVER_ABSTOL = parse(Float64, get(ENV, "TCE_ABSTOL", "1e-8"))
 const SOLVER_RELTOL = parse(Float64, get(ENV, "TCE_RELTOL", "1e-5"))
 const MTK_JAC_CACHE = Dict{UInt64, Function}()
+const MTK_SPARSE_PROTOTYPE_CACHE = Dict{UInt64, SparseMatrixCSC{Float64,Int}}()
+const DEFAULT_CORE_MODE = let core_mode = lowercase(strip(get(ENV, "TCE_CORE_MODE", "production")))
+    if core_mode == "production"
+        :production
+    elseif core_mode == "legacy_reference"
+        :legacy_reference
+    elseif core_mode == "auto"
+        :auto
+    else
+        error("Unsupported TCE_CORE_MODE=$core_mode. Use production, legacy_reference, or auto.")
+    end
+end
 
 function make_solver_alg(solver_name::AbstractString)
     solver = lowercase(String(solver_name))
@@ -349,7 +372,7 @@ end
 
 # Symbolics/MTK tracing path for Jacobian generation (used only for symbolic probe RHS).
 # For phase-1 settings PKflag=1 and this branch matches the on-path behavior.
-function PK_v26(TDBc_ugperkg::Num, Vc::Num, PKflag, VPid, ticker, end_time, fvalidation)
+function PK_v26(TDBc_ugperkg::Num, Vc::Num, PKflag::Num, VPid::Num, ticker::Num, end_time::Num, fvalidation::Num)
     val = TDBc_ugperkg / Vc
     return ifelse(val > 1e-5, val, zero(val))
 end
@@ -357,8 +380,52 @@ end
 pow_safe(a::Float64, b::Float64) = Float64(real((complex(a) ^ b)))
 pow_safe(a::Float64, b::Integer) = Float64(real((complex(a) ^ b)))
 pow_safe(a::Real, b::Real) = real((complex(a) ^ b))
+pow_safe(a::Num, b::Num) = a ^ b
+pow_safe(a::Num, b::Real) = a ^ b
 pow_safe(a::Num, b) = a ^ b
 pow_safe(a, b) = a ^ b
+
+function normalize_function_expr(ex::Expr)
+    Base.remove_linenums!(ex)
+    while ex.head == :block && length(ex.args) == 1 && ex.args[1] isa Expr
+        ex = ex.args[1]
+    end
+    return ex
+end
+
+const MANUAL_CORE_PATH = joinpath(@__DIR__, "TCellEngagerQSPManualCore.jl")
+if isfile(MANUAL_CORE_PATH)
+    include(MANUAL_CORE_PATH)
+else
+    error("Missing manual model core at $MANUAL_CORE_PATH.")
+end
+
+function build_core_params(param_names::Vector{String}, pvals::Vector{Float64})
+    p = MosunModelCore.default_params()
+    for (nm, pv) in zip(param_names, pvals)
+        sym = Symbol(nm)
+        if hasproperty(p, sym)
+            setproperty!(p, sym, Float64(pv))
+        end
+    end
+    return p
+end
+
+function canonical_core_mode(param_to_idx::Dict{String,Int}, pvals::Vector{Float64})
+    pkflag_idx = get(param_to_idx, "PKflag", 0)
+    if pkflag_idx == 0
+        return :legacy_reference
+    end
+    return isapprox(pvals[pkflag_idx], 1.0; atol = 0.0, rtol = 0.0) ? :production : :legacy_reference
+end
+
+core_state_names() = [String(sym) for sym in MosunModelCore.DYNAMIC_STATE_NAMES]
+core_state_to_idx() = Dict(name => i for (i, name) in enumerate(core_state_names()))
+core_observable_names() = Set(String(sym) for sym in MosunModelCore.OBSERVABLE_NAMES)
+canonical_u0(mdl) = get(mdl, :core_mode, :legacy_reference) == :production ? mdl.core_u0 : mdl.u0
+canonical_state_to_idx(mdl) = get(mdl, :core_mode, :legacy_reference) == :production ? mdl.core_state_to_idx : mdl.state_to_idx
+uses_production_layout(mdl, u::AbstractVector) =
+    get(mdl, :core_mode, :legacy_reference) == :production && haskey(mdl, :core_u0) && length(u) == length(mdl.core_u0)
 
 function rewrite_expr(ex, name_to_idx::Dict{String,Int})
     if ex isa Symbol
@@ -401,62 +468,44 @@ function compile_formula(formula::String, name_to_idx::Dict{String,Int})
             Float64(real(v))
         end
     end
-    return eval(fexpr)
+    return RuntimeGeneratedFunction(@__MODULE__, @__MODULE__, normalize_function_expr(fexpr))
+end
+
+function populate_value_buffer!(z::Vector{Float64}, mdl, u::Vector{Float64}, t::Float64)
+    uses_production_layout(mdl, u) &&
+        throw(ArgumentError("populate_value_buffer! is only available for the legacy/reference layout"))
+    apply_repeated_rules_direct!(z, u, mdl.pvals, t)
+    return z
+end
+
+function eval_symbol(mdl, u::Vector{Float64}, t::Float64, name::String)
+    if uses_production_layout(mdl, u)
+        cache = MosunModelCore.zero_observables_cache()
+        MosunModelCore.update_observables!(cache, u, mdl.core_params, t)
+        return MosunModelCore.state_or_observable(u, cache, Symbol(sanitize_name(name)))
+    end
+    z = copy(mdl.z)
+    populate_value_buffer!(z, mdl, u, t)
+    return z[mdl.name_to_idx[name]]
+end
+
+function compile_legacy_runtime(mdl)
+    repeated_rule_exprs = RuleExpr[]
+    for (lhs_idx, rhs) in mdl.repeated_rule_defs
+        push!(repeated_rule_exprs, RuleExpr(lhs_idx, compile_formula(rhs, mdl.name_to_idx), ""))
+    end
+    rate_fns = [compile_formula(expr, mdl.name_to_idx) for expr in mdl.rate_exprs]
+    return repeated_rule_exprs, rate_fns
+end
+
+function make_legacy_context(mdl, infusions::Vector{InfusionEvent})
+    repeated_rule_exprs, rate_fns = compile_legacy_runtime(mdl)
+    return SimContext(copy(mdl.z), mdl.pvals, repeated_rule_exprs, rate_fns, mdl.stoich, infusions)
 end
 
 function compile_formula_expr(formula::String, name_to_idx::Dict{String,Int})
     expr = Meta.parse(sanitize_formula(formula))
     return rewrite_expr(expr, name_to_idx)
-end
-
-function build_canonical_rhs_function(
-        name_to_idx::Dict{String,Int},
-        repeated_rule_defs::Vector{Tuple{Int,String}},
-        rate_exprs::Vector{String},
-        stoich::Vector{Vector{Pair{Int,Float64}}})
-
-    repeated_assign_exprs = Any[]
-    for (lhs_idx, rhs) in repeated_rule_defs
-        rhs_expr = compile_formula_expr(rhs, name_to_idx)
-        push!(repeated_assign_exprs, :(z[$lhs_idx] = Float64(real($rhs_expr))))
-    end
-
-    reaction_blocks = Any[]
-    for j in eachindex(rate_exprs)
-        rvar = gensym(:rate)
-        rexpr = compile_formula_expr(rate_exprs[j], name_to_idx)
-        block = Expr(:block, :($rvar = Float64(real($rexpr))))
-        for (i, coeff) in stoich[j]
-            push!(block.args, :(du[$i] += $(Float64(coeff)) * $rvar))
-        end
-        push!(reaction_blocks, block)
-    end
-
-    fexpr = quote
-        (du, u, ctx, t) -> begin
-            ns = length(u)
-            np = length(ctx.pvals)
-            z = ctx.z
-            @inbounds begin
-                z[1:ns] .= u
-                z[ns+1:ns+np] .= ctx.pvals
-                $(repeated_assign_exprs...)
-
-                fill!(du, 0.0)
-
-                for inf in ctx.infusions
-                    if t >= inf.t_start && t <= inf.t_end
-                        du[inf.target_idx] += inf.rate
-                    end
-                end
-
-                $(reaction_blocks...)
-            end
-            return nothing
-        end
-    end
-
-    return eval(fexpr)
 end
 
 function build_symbolic_probe_rhs_function(
@@ -499,15 +548,17 @@ function build_symbolic_probe_rhs_function(
             return nothing
         end
     end
-    return Base.invokelatest(Core.eval, @__MODULE__, fexpr)
+    return RuntimeGeneratedFunction(@__MODULE__, @__MODULE__, normalize_function_expr(fexpr))
 end
 
-function mtk_jac_cache_key(mdl)
-    return hash((length(mdl.u0), length(mdl.pvals), mdl.repeated_rule_defs, mdl.rate_exprs, mdl.stoich))
+function mtk_jac_cache_key(mdl; sparse::Bool = false)
+    return hash((length(mdl.u0), length(mdl.pvals), mdl.repeated_rule_defs, mdl.rate_exprs, mdl.stoich, sparse))
 end
 
 function make_mtk_dense_jacobian(mdl)
-    key = mtk_jac_cache_key(mdl)
+    get(mdl, :core_mode, :legacy_reference) == :production &&
+        throw(ArgumentError("MTK dense Jacobians are only available on the legacy/reference model path"))
+    key = mtk_jac_cache_key(mdl; sparse = false)
     if haskey(MTK_JAC_CACHE, key)
         return MTK_JAC_CACHE[key]
     end
@@ -521,10 +572,10 @@ function make_mtk_dense_jacobian(mdl)
         length(mdl.pvals),
     )
     probe_prob = ODEProblem(sym_rhs, copy(mdl.u0), (0.0, 1.0), copy(mdl.pvals))
-    sys = Base.invokelatest(ModelingToolkit.modelingtoolkitize, probe_prob)
-    jac_exprs = Base.invokelatest(() -> ModelingToolkit.generate_jacobian(sys; sparse = false, simplify = false))
+    sys = ModelingToolkit.modelingtoolkitize(probe_prob)
+    jac_exprs = ModelingToolkit.generate_jacobian(sys; sparse = false, simplify = false)
     (_, jac_expr_inplace) = jac_exprs
-    jac_vec! = Base.invokelatest(Core.eval, @__MODULE__, jac_expr_inplace)
+    jac_vec! = RuntimeGeneratedFunction(@__MODULE__, @__MODULE__, normalize_function_expr(jac_expr_inplace))
 
     n = length(mdl.u0)
     jac_work = zeros(Float64, n * n)
@@ -540,7 +591,7 @@ function make_mtk_dense_jacobian(mdl)
             else
                 throw(ArgumentError("Unsupported parameter container type $(typeof(p)) for MTK Jacobian"))
             end
-        Base.invokelatest(jac_vec!, jac_work, u, pvals, t)
+        jac_vec!(jac_work, u, pvals, t)
         if J isa AbstractMatrix
             @inbounds for j in 1:n, i in 1:n
                 v = jac_work[(j - 1) * n + i]
@@ -557,6 +608,104 @@ function make_mtk_dense_jacobian(mdl)
 
     MTK_JAC_CACHE[key] = jac!
     return jac!
+end
+
+function make_mtk_sparse_jacobian(mdl)
+    get(mdl, :core_mode, :legacy_reference) == :production &&
+        throw(ArgumentError("MTK sparse Jacobians are only available on the legacy/reference model path"))
+    key = mtk_jac_cache_key(mdl; sparse = true)
+    if haskey(MTK_JAC_CACHE, key)
+        return MTK_JAC_CACHE[key]
+    end
+
+    sym_rhs = build_symbolic_probe_rhs_function(
+        mdl.name_to_idx,
+        mdl.repeated_rule_defs,
+        mdl.rate_exprs,
+        mdl.stoich,
+        length(mdl.u0),
+        length(mdl.pvals),
+    )
+    probe_prob = ODEProblem(sym_rhs, copy(mdl.u0), (0.0, 1.0), copy(mdl.pvals))
+    sys = ModelingToolkit.modelingtoolkitize(probe_prob)
+    jac_exprs = ModelingToolkit.generate_jacobian(sys; sparse = true, simplify = false)
+    (_, jac_expr_inplace) = jac_exprs
+    jac_sparse! = RuntimeGeneratedFunction(@__MODULE__, @__MODULE__, normalize_function_expr(jac_expr_inplace))
+    n = length(mdl.u0)
+    proto = copy(make_mtk_sparse_jacobian_prototype(mdl))
+
+    function sanitize_sparse_jac!(J::SparseMatrixCSC)
+        @inbounds for i in eachindex(J.nzval)
+            v = J.nzval[i]
+            J.nzval[i] = isfinite(v) ? v : 0.0
+        end
+        return J
+    end
+
+    function jac!(J, u, p, t)
+        pvals =
+            if p isa CanonicalSimContext
+                p.pvals
+            elseif p isa SimContext
+                p.pvals
+            elseif p isa AbstractVector
+                p
+            else
+                throw(ArgumentError("Unsupported parameter container type $(typeof(p)) for MTK sparse Jacobian"))
+            end
+
+        if J isa SparseMatrixCSC
+            fill!(J.nzval, 0.0)
+            jac_sparse!(J, u, pvals, t)
+            sanitize_sparse_jac!(J)
+        elseif J isa AbstractMatrix
+            Jsp = copy(proto)
+            fill!(Jsp.nzval, 0.0)
+            jac_sparse!(Jsp, u, pvals, t)
+            sanitize_sparse_jac!(Jsp)
+            copyto!(J, Matrix(Jsp))
+        else
+            Jsp = copy(proto)
+            fill!(Jsp.nzval, 0.0)
+            jac_sparse!(Jsp, u, pvals, t)
+            sanitize_sparse_jac!(Jsp)
+            copyto!(J, vec(Matrix(Jsp)))
+        end
+        return nothing
+    end
+
+    MTK_JAC_CACHE[key] = jac!
+    return jac!
+end
+
+function make_mtk_sparse_jacobian_prototype(mdl)
+    get(mdl, :core_mode, :legacy_reference) == :production &&
+        throw(ArgumentError("MTK sparse Jacobian prototypes are only available on the legacy/reference model path"))
+    key = mtk_jac_cache_key(mdl; sparse = true)
+    if haskey(MTK_SPARSE_PROTOTYPE_CACHE, key)
+        return MTK_SPARSE_PROTOTYPE_CACHE[key]
+    end
+
+    sym_rhs = build_symbolic_probe_rhs_function(
+        mdl.name_to_idx,
+        mdl.repeated_rule_defs,
+        mdl.rate_exprs,
+        mdl.stoich,
+        length(mdl.u0),
+        length(mdl.pvals),
+    )
+    probe_prob = ODEProblem(sym_rhs, copy(mdl.u0), (0.0, 1.0), copy(mdl.pvals))
+    sys = ModelingToolkit.modelingtoolkitize(probe_prob)
+    jac_exprs = ModelingToolkit.generate_jacobian(sys; sparse = true, simplify = false)
+    (jac_expr_outofplace, _) = jac_exprs
+    jac_sparse_outofplace = RuntimeGeneratedFunction(@__MODULE__, @__MODULE__, normalize_function_expr(jac_expr_outofplace))
+    proto = jac_sparse_outofplace(copy(mdl.u0), copy(mdl.pvals), 0.0)
+    if !(proto isa SparseMatrixCSC)
+        proto = sparse(proto)
+    end
+    fill!(proto.nzval, 0.0)
+    MTK_SPARSE_PROTOTYPE_CACHE[key] = proto
+    return proto
 end
 
 function extract_identifiers(expr::String)
@@ -943,7 +1092,7 @@ function expand_dose_events(dose::DoseDef)
     return dose.times, amounts, rates
 end
 
-function build_model_with_variant_ids(variant_ids::Vector{Int}, param_names::Vector{String}, param_values::Vector{Float64})
+function build_model_with_variant_ids(variant_ids::Vector{Int}, param_names::Vector{String}, param_values::Vector{Float64}; core_mode_override::Symbol = DEFAULT_CORE_MODE)
     artifacts = load_artifacts()
 
     load_pk_datasets!()
@@ -970,25 +1119,17 @@ function build_model_with_variant_ids(variant_ids::Vector{Int}, param_names::Vec
 
     state_to_idx = Dict(name => i for (i, name) in enumerate(state_names))
     param_to_idx = Dict(name => i for (i, name) in enumerate(param_names_all))
+    direct_model_layout_matches(state_names, param_names_all) ||
+        error("Manual model core layout does not match exported tables.")
 
     rep_order = repeated_rule_order(artifacts.repeated_rules)
-    repeated_rule_exprs = RuleExpr[]
     repeated_rule_defs = Tuple{Int,String}[]
     for idx in rep_order
         lhs, rhs = artifacts.repeated_rules[idx]
         lhs_s = sanitize_name(lhs)
         lhs_idx = name_to_idx[lhs_s]
         push!(repeated_rule_defs, (lhs_idx, rhs))
-        push!(repeated_rule_exprs, RuleExpr(name_to_idx[lhs_s], compile_formula(rhs, name_to_idx), lhs_s))
     end
-
-    initial_rule_exprs = RuleExpr[]
-    for (lhs, rhs) in artifacts.initial_rules
-        lhs_s = sanitize_name(lhs)
-        push!(initial_rule_exprs, RuleExpr(name_to_idx[lhs_s], compile_formula(rhs, name_to_idx), lhs_s))
-    end
-
-    rate_fns = [compile_formula(expr, name_to_idx) for expr in artifacts.rate_exprs]
 
     stoich = artifacts.stoich
 
@@ -1015,20 +1156,23 @@ function build_model_with_variant_ids(variant_ids::Vector{Int}, param_names::Vec
     z[1:length(state_names)] .= u0
     z[length(state_names)+1:length(state_names)+length(param_names_all)] .= pvals
 
-    for r in initial_rule_exprs
-        z[r.lhs_idx] = Base.invokelatest(r.fn, z, 0.0)
-        lhs_name = r.lhs_name
-        if haskey(state_to_idx, lhs_name)
-            u0[state_to_idx[lhs_name]] = z[r.lhs_idx]
-        end
-    end
+    apply_initial_rules_direct!(z, u0, pvals)
 
-    canonical_rhs = build_canonical_rhs_function(
-        name_to_idx,
-        repeated_rule_defs,
-        artifacts.rate_exprs,
-        stoich,
-    )
+    core_params = build_core_params(param_names_all, pvals)
+    core_mode = core_mode_override == :auto ? canonical_core_mode(param_to_idx, pvals) : core_mode_override
+    core_mode in (:production, :legacy_reference) || error("Unsupported core_mode_override=$core_mode_override")
+    core_u0 = MosunModelCore.pack_state(MosunModelCore.initial_state(core_params))
+    core_state_names_vec = core_state_names()
+    core_state_to_idx_map = core_state_to_idx()
+    core_observable_names_set = core_observable_names()
+    canonical_rhs =
+        if core_mode == :production
+            let params_fixed = deepcopy(core_params)
+                (du, u, ctx, t) -> MosunModelCore.mosun_rhs!(du, u, params_fixed, t, ctx.cache; infusions = ctx.infusions)
+            end
+        else
+            rhs_direct!
+        end
 
     return (
         state_names = state_names,
@@ -1037,18 +1181,24 @@ function build_model_with_variant_ids(variant_ids::Vector{Int}, param_names::Vec
         param_names = param_names_all,
         pvals = pvals,
         u0 = u0,
+        core_mode = core_mode,
+        core_params = core_params,
+        core_u0 = core_u0,
+        core_state_names = core_state_names_vec,
+        core_state_to_idx = core_state_to_idx_map,
+        core_observable_names = core_observable_names_set,
         z = z,
-        repeated_rule_exprs = repeated_rule_exprs,
+        repeated_rule_exprs = RuleExpr[],
         repeated_rule_defs = repeated_rule_defs,
-        rate_fns = rate_fns,
+        rate_fns = Function[],
         rate_exprs = artifacts.rate_exprs,
         stoich = stoich,
         canonical_rhs = canonical_rhs,
     )
 end
 
-function build_model(case_no::Int, param_names::Vector{String}, param_values::Vector{Float64})
-    return build_model_with_variant_ids(case_variant_ids(case_no), param_names, param_values)
+function build_model(case_no::Int, param_names::Vector{String}, param_values::Vector{Float64}; core_mode_override::Symbol = DEFAULT_CORE_MODE)
+    return build_model_with_variant_ids(case_variant_ids(case_no), param_names, param_values; core_mode_override = core_mode_override)
 end
 
 function build_dose_events(selected_doses::Vector{String}, state_to_idx::Dict{String,Int}, artifacts::ModelArtifacts)
@@ -1084,6 +1234,24 @@ function build_dose_events(selected_doses::Vector{String}, state_to_idx::Dict{St
     return discrete_times, discrete_map, infusions
 end
 
+function build_core_regimen(selected_doses::Vector{String}, artifacts::ModelArtifacts)
+    events = MosunModelCore.MosunRegimenEvent[]
+    for dname in selected_doses
+        ddef = dose_lookup(artifacts, dname)
+        times, amounts, rates = expand_dose_events(ddef)
+        target = Symbol(ddef.target)
+        for i in eachindex(times)
+            push!(events, MosunModelCore.MosunRegimenEvent(
+                target = target,
+                time = Float64(times[i]),
+                amount = Float64(amounts[i]),
+                rate = Float64(rates[i]),
+            ))
+        end
+    end
+    return MosunModelCore.MosunRegimen(events = events)
+end
+
 function rhs!(du, u, ctx::SimContext, t)
     ns = length(u)
     np = length(ctx.pvals)
@@ -1093,7 +1261,7 @@ function rhs!(du, u, ctx::SimContext, t)
         ctx.z[ns+1:ns+np] .= ctx.pvals
 
         for r in ctx.repeated_rules
-            ctx.z[r.lhs_idx] = Base.invokelatest(r.fn, ctx.z, t)
+            ctx.z[r.lhs_idx] = r.fn(ctx.z, t)
         end
 
         fill!(du, 0.0)
@@ -1105,7 +1273,7 @@ function rhs!(du, u, ctx::SimContext, t)
         end
 
         for j in eachindex(ctx.rate_fns)
-            rate = Base.invokelatest(ctx.rate_fns[j], ctx.z, t)
+            rate = ctx.rate_fns[j](ctx.z, t)
             for (i, coeff) in ctx.stoich[j]
                 du[i] += coeff * rate
             end
@@ -1121,15 +1289,40 @@ function run_simulation(
         param_values::Vector{Float64},
         selected_doses::Vector{String},
         save_times::Vector{Float64};
-        engine::Symbol = :canonical)
+        engine::Symbol = :canonical,
+        core_mode_override::Symbol = DEFAULT_CORE_MODE)
     artifacts = load_artifacts()
-    mdl = build_model(case_no, param_names, param_values)
-    discrete_times, discrete_map, infusions = build_dose_events(selected_doses, mdl.state_to_idx, artifacts)
+    mdl = build_model(case_no, param_names, param_values; core_mode_override = core_mode_override)
+    dose_state_to_idx = engine == :canonical && get(mdl, :core_mode, :legacy_reference) == :production ? mdl.core_state_to_idx : mdl.state_to_idx
+    discrete_times, discrete_map, infusions = build_dose_events(selected_doses, dose_state_to_idx, artifacts)
+    t0 = minimum(save_times)
+    tf = maximum(save_times)
+    save_times_sorted = sort(unique(save_times))
+
+    if engine == :canonical && get(mdl, :core_mode, :legacy_reference) == :production
+        regimen = build_core_regimen(selected_doses, artifacts)
+        tstart = min(0.0, t0)
+        built = MosunModelCore.build_problem(
+            regimen,
+            mdl.core_params;
+            tspan = (tstart, tf),
+            saveat = save_times_sorted,
+            callback_mode = :callback,
+        )
+        sol = MosunModelCore.solve_problem(
+            built,
+            make_solver_alg();
+            abstol = SOLVER_ABSTOL,
+            reltol = SOLVER_RELTOL,
+        )
+        sol.retcode == SciMLBase.ReturnCode.Success || error("solve failed with retcode=$(sol.retcode)")
+        return mdl, sol
+    end
 
     rhs_fun = rhs!
     ctx = nothing
     if engine == :legacy
-        ctx = SimContext(copy(mdl.z), mdl.pvals, mdl.repeated_rule_exprs, mdl.rate_fns, mdl.stoich, infusions)
+        ctx = make_legacy_context(mdl, infusions)
         rhs_fun = rhs!
     elseif engine == :canonical
         ctx = CanonicalSimContext(copy(mdl.z), mdl.pvals, infusions)
@@ -1138,11 +1331,7 @@ function run_simulation(
         error("Unsupported engine=$engine. Use :legacy or :canonical.")
     end
 
-    t0 = minimum(save_times)
-    tf = maximum(save_times)
-    save_times_sorted = sort(unique(save_times))
-
-    u_curr = copy(mdl.u0)
+    u_curr = engine == :canonical && get(mdl, :core_mode, :legacy_reference) == :production ? copy(mdl.core_u0) : copy(mdl.u0)
     t_curr = t0
     alg = make_solver_alg()
     sol_t = Float64[]
@@ -1215,18 +1404,24 @@ function extract_outputs(sol, mdl, outvec::Vector{String})
     n = length(sol.t)
     m = length(outvec)
     X = zeros(Float64, n, m)
-    ns = length(mdl.state_names)
-    np = length(mdl.pvals)
-    z = copy(mdl.z)
+    if n > 0 && uses_production_layout(mdl, sol.u[1])
+        cache = MosunModelCore.zero_observables_cache()
+        for i in 1:n
+            u = sol.u[i]
+            t = sol.t[i]
+            MosunModelCore.update_observables!(cache, u, mdl.core_params, t)
+            for (j, name0) in enumerate(outvec)
+                X[i, j] = MosunModelCore.state_or_observable(u, cache, Symbol(sanitize_name(name0)))
+            end
+        end
+        return X
+    end
 
+    z = copy(mdl.z)
     for i in 1:n
         u = sol.u[i]
         t = sol.t[i]
-        z[1:ns] .= u
-        z[ns+1:ns+np] .= mdl.pvals
-        for r in mdl.repeated_rule_exprs
-            z[r.lhs_idx] = Base.invokelatest(r.fn, z, t)
-        end
+        populate_value_buffer!(z, mdl, u, t)
         for (j, name0) in enumerate(outvec)
             name = sanitize_name(name0)
             idx = mdl.name_to_idx[name]
@@ -1237,7 +1432,7 @@ function extract_outputs(sol, mdl, outvec::Vector{String})
     return X
 end
 
-function run_manifest_row(row; engine::Symbol = :canonical)
+function run_manifest_row(row; engine::Symbol = :canonical, core_mode_override::Symbol = DEFAULT_CORE_MODE)
     case_no = Int(row.case_no)
     outvec = Vector{String}(JSON3.read(String(row.outvec_json), Vector{String}))
     param_names = Vector{String}(JSON3.read(String(row.param_names_json), Vector{String}))
@@ -1248,12 +1443,12 @@ function run_manifest_row(row; engine::Symbol = :canonical)
     ref_df = DataFrame(CSV.File(ref_path))
     save_times = Float64.(ref_df.time)
 
-    mdl, sol = run_simulation(case_no, param_names, param_values, selected_doses, save_times; engine = engine)
+    mdl, sol = run_simulation(case_no, param_names, param_values, selected_doses, save_times; engine = engine, core_mode_override = core_mode_override)
     X = extract_outputs(sol, mdl, outvec)
 
     return save_times, outvec, X, ref_df
 end
 
-export run_manifest_row, REPO_ROOT, build_model_with_variant_ids, run_simulation, make_mtk_dense_jacobian
+export MosunModelCore, DEFAULT_CORE_MODE, run_manifest_row, REPO_ROOT, build_model_with_variant_ids, run_simulation, make_mtk_dense_jacobian, make_mtk_sparse_jacobian, make_mtk_sparse_jacobian_prototype, canonical_u0, canonical_state_to_idx
 
 end # module

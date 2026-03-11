@@ -5,6 +5,7 @@ using SciMLBase
 using SciMLSensitivity
 using ForwardDiff
 using ReverseDiff
+using RuntimeGeneratedFunctions
 using Zygote
 using Printf
 using JSON3
@@ -13,6 +14,8 @@ using LinearAlgebra
 
 include(joinpath(@__DIR__, "src", "TCellEngagerQSP.jl"))
 using .TCellEngagerQSP
+
+RuntimeGeneratedFunctions.init(@__MODULE__)
 
 repo_root = TCellEngagerQSP.REPO_ROOT
 design_dir_default = joinpath(repo_root, "generated", "phase1_design")
@@ -99,28 +102,30 @@ function build_ad_rhs_no_cast(mdl)
 
     np = length(mdl.pvals)
     zlen = length(mdl.name_to_idx)
-    pvals = copy(mdl.pvals)
-
     fexpr = quote
-        let pvals0 = $pvals
-            (du, u, p, t) -> begin
-                ns = length(u)
-                T = eltype(u)
-                z = Vector{T}(undef, $zlen)
-                @inbounds begin
-                    z[1:ns] .= u
-                    z[ns+1:ns+$np] .= T.(pvals0)
-                    $(repeated_assign_exprs...)
+        (du, u, pvals, t) -> begin
+            ns = length(u)
+            T = eltype(u)
+            z = Vector{T}(undef, $zlen)
+            @inbounds begin
+                z[1:ns] .= u
+                z[ns+1:ns+$np] .= pvals
+                $(repeated_assign_exprs...)
 
-                    fill!(du, zero(T))
-                    $(reaction_blocks...)
-                end
-                return nothing
+                fill!(du, zero(T))
+                $(reaction_blocks...)
             end
+            return nothing
         end
     end
 
-    return Base.invokelatest(Core.eval, TCellEngagerQSP, fexpr)
+    rhs_rgf = RuntimeGeneratedFunction(
+        TCellEngagerQSP,
+        TCellEngagerQSP,
+        TCellEngagerQSP.normalize_function_expr(fexpr),
+    )
+    pvals0 = copy(mdl.pvals)
+    return (du, u, p, t) -> rhs_rgf(du, u, pvals0, t)
 end
 
 function build_symbol_observer_no_cast(mdl, symbol_name::String)
@@ -129,8 +134,6 @@ function build_symbol_observer_no_cast(mdl, symbol_name::String)
     zlen = length(name_to_idx)
     target_idx = name_to_idx[symbol_name]
     np = length(mdl.pvals)
-    pvals = copy(mdl.pvals)
-
     repeated_assign_exprs = Any[]
     for (lhs_idx, rhs0) in repeated_rule_defs
         rhs =
@@ -144,21 +147,25 @@ function build_symbol_observer_no_cast(mdl, symbol_name::String)
     end
 
     fexpr = quote
-        let pvals0 = $pvals
-            (u, t) -> begin
-                ns = length(u)
-                T = eltype(u)
-                z = Vector{T}(undef, $zlen)
-                @inbounds begin
-                    z[1:ns] .= u
-                    z[ns+1:ns+$np] .= T.(pvals0)
-                    $(repeated_assign_exprs...)
-                end
-                return z[$target_idx]
+        (u, t, pvals) -> begin
+            ns = length(u)
+            T = eltype(u)
+            z = Vector{T}(undef, $zlen)
+            @inbounds begin
+                z[1:ns] .= u
+                z[ns+1:ns+$np] .= pvals
+                $(repeated_assign_exprs...)
             end
+            return z[$target_idx]
         end
     end
-    return Base.invokelatest(Core.eval, TCellEngagerQSP, fexpr)
+    obs_rgf = RuntimeGeneratedFunction(
+        TCellEngagerQSP,
+        TCellEngagerQSP,
+        TCellEngagerQSP.normalize_function_expr(fexpr),
+    )
+    pvals0 = copy(mdl.pvals)
+    return (u, t) -> obs_rgf(u, t, pvals0)
 end
 
 function smoothmax(v::AbstractVector, tau::Float64)
@@ -244,7 +251,7 @@ function cycle_metrics(dose_mg::AbstractVector{T}; sensealg = nothing, alg = Tsi
         maxiters = maxiters,
     )
     n_tox = length(tox_eval_days)
-    il6_vals = [Base.invokelatest(il6_obs_fun, sol1.u[i], sol1.t[i]) for i in 1:n_tox]
+    il6_vals = [il6_obs_fun(sol1.u[i], sol1.t[i]) for i in 1:n_tox]
     tox_proxy = smoothmax(il6_vals, tox_tau)
 
     u2 = sol1.u[end] .+ d_ugkg[2] .* e_tdbc
@@ -350,6 +357,7 @@ end
 otd_forward = ForwardSensitivity()
 otd_reverse = ReverseDiffAdjoint()
 dto_passthrough = SensitivityADPassThrough()
+skip_reverse = lowercase(get(ENV, "GRAD_SKIP_REVERSE", "0")) in ("1", "true", "yes")
 
 reports = Dict{String, Any}[]
 
@@ -386,15 +394,17 @@ push!(
 )
 
 # OtD reverse
-fd_otd_r = run_fd_row!(reports, "fd_otd_reverse", d -> balanced_loss(d; sensealg = nothing, alg = alg_otd))
-push!(
-    reports,
-    grad_report(
-        "otd_reverse",
-        () -> first(Zygote.gradient(d -> balanced_loss(d; sensealg = otd_reverse, alg = alg_otd), ref_dose_mg)),
-        fd_otd_r,
-    ),
-)
+if !skip_reverse
+    fd_otd_r = run_fd_row!(reports, "fd_otd_reverse", d -> balanced_loss(d; sensealg = nothing, alg = alg_otd))
+    push!(
+        reports,
+        grad_report(
+            "otd_reverse",
+            () -> first(Zygote.gradient(d -> balanced_loss(d; sensealg = otd_reverse, alg = alg_otd), ref_dose_mg)),
+            fd_otd_r,
+        ),
+    )
+end
 
 # DtO forward
 fd_dto_f = run_fd_row!(reports, "fd_dto_forward", d -> balanced_loss(d; sensealg = nothing, alg = alg_dto))
@@ -408,15 +418,17 @@ push!(
 )
 
 # DtO reverse
-fd_dto_r = run_fd_row!(reports, "fd_dto_reverse", d -> balanced_loss(d; sensealg = nothing, alg = alg_dto))
-push!(
-    reports,
-    grad_report(
-        "dto_reverse",
-        () -> first(Zygote.gradient(d -> balanced_loss(d; sensealg = dto_passthrough, alg = alg_dto), ref_dose_mg)),
-        fd_dto_r,
-    ),
-)
+if !skip_reverse
+    fd_dto_r = run_fd_row!(reports, "fd_dto_reverse", d -> balanced_loss(d; sensealg = nothing, alg = alg_dto))
+    push!(
+        reports,
+        grad_report(
+            "dto_reverse",
+            () -> first(Zygote.gradient(d -> balanced_loss(d; sensealg = dto_passthrough, alg = alg_dto), ref_dose_mg)),
+            fd_dto_r,
+        ),
+    )
+end
 
 out_dir_default = joinpath(repo_root, "generated", "gradient_checks")
 out_dir_env = get(ENV, "GRAD_OUT_DIR", out_dir_default)

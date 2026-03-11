@@ -12,6 +12,10 @@ engine = Symbol(lowercase(get(ENV, "TCE_ENGINE", "canonical")))
 if !(engine in (:legacy, :canonical))
     error("Unsupported TCE_ENGINE=$engine. Use legacy or canonical.")
 end
+core_mode = Symbol(lowercase(get(ENV, "TCE_CORE_MODE", string(TCellEngagerQSP.DEFAULT_CORE_MODE))))
+if !(core_mode in (:production, :legacy_reference, :auto))
+    error("Unsupported TCE_CORE_MODE=$core_mode. Use production, legacy_reference, or auto.")
+end
 
 manifest = DataFrame(CSV.File(manifest_path))
 summary_rows = DataFrame(
@@ -23,7 +27,7 @@ summary_rows = DataFrame(
 )
 
 for row in eachrow(manifest)
-    times, outvec, Xj, ref_df = run_manifest_row(row; engine = engine)
+    times, outvec, Xj, ref_df = run_manifest_row(row; engine = engine, core_mode_override = core_mode)
 
     Xref = hcat([Float64.(ref_df[!, Symbol(name)]) for name in outvec]...)
     abs_err = abs.(Xj .- Xref)
@@ -47,6 +51,6 @@ for row in eachrow(manifest)
     println("$sim_key => max_abs_err=$(max_abs), max_rel_err=$(max_rel)")
 end
 
-summary_path = joinpath(out_dir, "parity_summary_" * String(engine) * ".csv")
+summary_path = joinpath(out_dir, "parity_summary_" * String(engine) * "_" * String(core_mode) * ".csv")
 CSV.write(summary_path, summary_rows)
 println("Wrote parity summary: " * summary_path)

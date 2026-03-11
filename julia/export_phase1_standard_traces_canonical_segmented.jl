@@ -43,18 +43,6 @@ bw_kg_for_dose_conversion = 70.0
 tgrid = sort(unique(vcat(collect(0.0:0.01:2.0), collect(2.0:0.1:84.0))))
 alg = TCellEngagerQSP.make_solver_alg()
 
-function eval_symbol(mdl, u::Vector{Float64}, t::Float64, name::String)
-    ns = length(mdl.state_names)
-    np = length(mdl.pvals)
-    z = copy(mdl.z)
-    z[1:ns] .= u
-    z[ns+1:ns+np] .= mdl.pvals
-    for r in mdl.repeated_rule_exprs
-        z[r.lhs_idx] = Base.invokelatest(r.fn, z, t)
-    end
-    return z[mdl.name_to_idx[name]]
-end
-
 function append_solution!(sol_t::Vector{Float64}, sol_u::Vector{Vector{Float64}}, ts::Vector{Float64}, us::Vector{Vector{Float64}})
     if isempty(ts)
         return
@@ -168,8 +156,8 @@ for reg in unique(reg_events.regimen)
                 mdl.pvals,
                 TCellEngagerQSP.InfusionEvent[],
             )
-            target_idx = mdl.state_to_idx["TDBc_ugperkg"]
-            u0 = copy(mdl.u0)
+            target_idx = TCellEngagerQSP.canonical_state_to_idx(mdl)["TDBc_ugperkg"]
+            u0 = copy(TCellEngagerQSP.canonical_u0(mdl))
 
             u_aligned = run_segmented_trace(rhs_fun, ctx, u0, target_idx, dose_map, 84.0, tgrid, alg)
 
@@ -177,8 +165,8 @@ for reg in unique(reg_events.regimen)
             bt = Float64[]
             for (i, t) in enumerate(tgrid)
                 u = Float64.(u_aligned[i])
-                push!(il6, eval_symbol(mdl, u, t, "IL6combo"))
-                push!(bt, eval_symbol(mdl, u, t, "Btumor"))
+                push!(il6, TCellEngagerQSP.eval_symbol(mdl, u, t, "IL6combo"))
+                push!(bt, TCellEngagerQSP.eval_symbol(mdl, u, t, "Btumor"))
             end
 
             out_df = DataFrame(
