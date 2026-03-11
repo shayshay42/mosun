@@ -7,12 +7,15 @@ using JSON3
 using Optim
 using Printf
 using Random
+using RuntimeGeneratedFunctions
 using SciMLBase
 using SciMLSensitivity
 using Statistics
 
 include(joinpath(@__DIR__, "src", "TCellEngagerQSP.jl"))
 using .TCellEngagerQSP
+
+RuntimeGeneratedFunctions.init(@__MODULE__)
 
 function smoothmax(v::AbstractVector, tau::Real)
     m = maximum(v)
@@ -149,28 +152,30 @@ function build_ad_rhs_no_cast(mdl)
 
     np = length(mdl.pvals)
     zlen = length(mdl.name_to_idx)
-    pvals = copy(mdl.pvals)
-
     fexpr = quote
-        let pvals0 = $pvals
-            (du, u, p, t) -> begin
-                ns = length(u)
-                T = eltype(u)
-                z = Vector{T}(undef, $zlen)
-                @inbounds begin
-                    z[1:ns] .= u
-                    z[ns+1:ns+$np] .= T.(pvals0)
-                    $(repeated_assign_exprs...)
+        (du, u, pvals, t) -> begin
+            ns = length(u)
+            T = eltype(u)
+            z = Vector{T}(undef, $zlen)
+            @inbounds begin
+                z[1:ns] .= u
+                z[ns+1:ns+$np] .= pvals
+                $(repeated_assign_exprs...)
 
-                    fill!(du, zero(T))
-                    $(reaction_blocks...)
-                end
-                return nothing
+                fill!(du, zero(T))
+                $(reaction_blocks...)
             end
+            return nothing
         end
     end
 
-    return Base.invokelatest(Core.eval, TCellEngagerQSP, fexpr)
+    rhs_rgf = RuntimeGeneratedFunction(
+        TCellEngagerQSP,
+        TCellEngagerQSP,
+        TCellEngagerQSP.normalize_function_expr(fexpr),
+    )
+    pvals0 = copy(mdl.pvals)
+    return (du, u, p, t) -> rhs_rgf(du, u, pvals0, t)
 end
 
 function build_symbol_observer_no_cast(mdl, symbol_name::String)
@@ -179,8 +184,6 @@ function build_symbol_observer_no_cast(mdl, symbol_name::String)
     zlen = length(name_to_idx)
     target_idx = name_to_idx[symbol_name]
     np = length(mdl.pvals)
-    pvals = copy(mdl.pvals)
-
     repeated_assign_exprs = Any[]
     for (lhs_idx, rhs0) in repeated_rule_defs
         rhs =
@@ -194,21 +197,25 @@ function build_symbol_observer_no_cast(mdl, symbol_name::String)
     end
 
     fexpr = quote
-        let pvals0 = $pvals
-            (u, t) -> begin
-                ns = length(u)
-                T = eltype(u)
-                z = Vector{T}(undef, $zlen)
-                @inbounds begin
-                    z[1:ns] .= u
-                    z[ns+1:ns+$np] .= T.(pvals0)
-                    $(repeated_assign_exprs...)
-                end
-                return z[$target_idx]
+        (u, t, pvals) -> begin
+            ns = length(u)
+            T = eltype(u)
+            z = Vector{T}(undef, $zlen)
+            @inbounds begin
+                z[1:ns] .= u
+                z[ns+1:ns+$np] .= pvals
+                $(repeated_assign_exprs...)
             end
+            return z[$target_idx]
         end
     end
-    return Base.invokelatest(Core.eval, TCellEngagerQSP, fexpr)
+    obs_rgf = RuntimeGeneratedFunction(
+        TCellEngagerQSP,
+        TCellEngagerQSP,
+        TCellEngagerQSP.normalize_function_expr(fexpr),
+    )
+    pvals0 = copy(mdl.pvals)
+    return (u, t) -> obs_rgf(u, t, pvals0)
 end
 
 function normalize_weights(w::LossWeights)
@@ -442,7 +449,7 @@ function simulate_trajectory(
 
     t_all = Float64[0.0]
     bt_all = T[bt0]
-    il6_all = T[Base.invokelatest(prob.il6_obs_fun, u_curr, 0.0)]
+    il6_all = T[prob.il6_obs_fun(u_curr, 0.0)]
 
     for i in 1:nd
         tdose = prob.dose_times_days[i]
@@ -457,14 +464,14 @@ function simulate_trajectory(
                 uj = sol.u[j]
                 push!(t_all, tj)
                 push!(bt_all, uj[prob.bt_idx])
-                push!(il6_all, Base.invokelatest(prob.il6_obs_fun, uj, sol.t[j]))
+                push!(il6_all, prob.il6_obs_fun(uj, sol.t[j]))
             end
             u_curr = sol.u[end]
             t_curr = tdose
         end
 
         u_curr = u_curr .+ d_ugkg[i] .* e_tdbc_t
-        il6_post = Base.invokelatest(prob.il6_obs_fun, u_curr, t_curr)
+        il6_post = prob.il6_obs_fun(u_curr, t_curr)
         if isempty(t_all) || !isapprox(t_curr, t_all[end]; atol = 1e-12, rtol = 0.0)
             push!(t_all, t_curr)
             push!(bt_all, u_curr[prob.bt_idx])
@@ -486,7 +493,7 @@ function simulate_trajectory(
             uj = sol.u[j]
             push!(t_all, tj)
             push!(bt_all, uj[prob.bt_idx])
-            push!(il6_all, Base.invokelatest(prob.il6_obs_fun, uj, sol.t[j]))
+            push!(il6_all, prob.il6_obs_fun(uj, sol.t[j]))
         end
     end
 

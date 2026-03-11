@@ -49,18 +49,6 @@ if !(engine in (:legacy, :canonical))
     error("Unsupported TCE_ENGINE=$engine. Use legacy or canonical.")
 end
 
-function eval_symbol(mdl, u::Vector{Float64}, t::Float64, name::String)
-    ns = length(mdl.state_names)
-    np = length(mdl.pvals)
-    z = copy(mdl.z)
-    z[1:ns] .= u
-    z[ns+1:ns+np] .= mdl.pvals
-    for r in mdl.repeated_rule_exprs
-        z[r.lhs_idx] = Base.invokelatest(r.fn, z, t)
-    end
-    return z[mdl.name_to_idx[name]]
-end
-
 manifest = DataFrame(
     regimen = String[],
     patient_id = Int[],
@@ -108,14 +96,7 @@ for reg in unique(reg_events.regimen)
             rhs_fun = TCellEngagerQSP.rhs!
             ctx = nothing
             if engine == :legacy
-                ctx = TCellEngagerQSP.SimContext(
-                    copy(mdl.z),
-                    mdl.pvals,
-                    mdl.repeated_rule_exprs,
-                    mdl.rate_fns,
-                    mdl.stoich,
-                    TCellEngagerQSP.InfusionEvent[],
-                )
+                ctx = TCellEngagerQSP.make_legacy_context(mdl, TCellEngagerQSP.InfusionEvent[])
                 rhs_fun = TCellEngagerQSP.rhs!
             else
                 ctx = TCellEngagerQSP.CanonicalSimContext(
@@ -125,7 +106,7 @@ for reg in unique(reg_events.regimen)
                 )
                 rhs_fun = mdl.canonical_rhs
             end
-            target_idx = mdl.state_to_idx["TDBc_ugperkg"]
+            target_idx = TCellEngagerQSP.canonical_state_to_idx(mdl)["TDBc_ugperkg"]
 
             local_dose_map = copy(dose_map)
             dose_at_t0 = get(local_dose_map, 0.0, 0.0)
@@ -150,7 +131,7 @@ for reg in unique(reg_events.regimen)
                 end
             end
 
-            u0 = copy(mdl.u0)
+            u0 = copy(TCellEngagerQSP.canonical_u0(mdl))
             if dose_at_t0 != 0.0
                 u0[target_idx] += dose_at_t0
             end
@@ -175,8 +156,8 @@ for reg in unique(reg_events.regimen)
             bt = Float64[]
             for t in tgrid
                 u = Float64.(sol(t))
-                push!(il6, eval_symbol(mdl, u, t, "IL6combo"))
-                push!(bt, eval_symbol(mdl, u, t, "Btumor"))
+                push!(il6, TCellEngagerQSP.eval_symbol(mdl, u, t, "IL6combo"))
+                push!(bt, TCellEngagerQSP.eval_symbol(mdl, u, t, "Btumor"))
             end
 
             out_df = DataFrame(

@@ -5,11 +5,14 @@ using ForwardDiff
 using JSON3
 using Optim
 using Printf
+using RuntimeGeneratedFunctions
 using SciMLBase
 using Statistics
 
 include(joinpath(@__DIR__, "src", "TCellEngagerQSP.jl"))
 using .TCellEngagerQSP
+
+RuntimeGeneratedFunctions.init(@__MODULE__)
 
 function smoothmax(v::AbstractVector, tau::Real)
     m = maximum(v)
@@ -86,28 +89,30 @@ function build_ad_rhs_no_cast(mdl)
 
     np = length(mdl.pvals)
     zlen = length(mdl.name_to_idx)
-    pvals = copy(mdl.pvals)
-
     fexpr = quote
-        let pvals0 = $pvals
-            (du, u, p, t) -> begin
-                ns = length(u)
-                T = eltype(u)
-                z = Vector{T}(undef, $zlen)
-                @inbounds begin
-                    z[1:ns] .= u
-                    z[ns+1:ns+$np] .= T.(pvals0)
-                    $(repeated_assign_exprs...)
+        (du, u, pvals, t) -> begin
+            ns = length(u)
+            T = eltype(u)
+            z = Vector{T}(undef, $zlen)
+            @inbounds begin
+                z[1:ns] .= u
+                z[ns+1:ns+$np] .= pvals
+                $(repeated_assign_exprs...)
 
-                    fill!(du, zero(T))
-                    $(reaction_blocks...)
-                end
-                return nothing
+                fill!(du, zero(T))
+                $(reaction_blocks...)
             end
+            return nothing
         end
     end
 
-    return Base.invokelatest(Core.eval, TCellEngagerQSP, fexpr)
+    rhs_rgf = RuntimeGeneratedFunction(
+        TCellEngagerQSP,
+        TCellEngagerQSP,
+        TCellEngagerQSP.normalize_function_expr(fexpr),
+    )
+    pvals0 = copy(mdl.pvals)
+    return (du, u, p, t) -> rhs_rgf(du, u, pvals0, t)
 end
 
 struct PatientProblem
@@ -142,8 +147,6 @@ function build_symbol_observer_no_cast(mdl, symbol_name::String)
     zlen = length(name_to_idx)
     target_idx = name_to_idx[symbol_name]
     np = length(mdl.pvals)
-    pvals = copy(mdl.pvals)
-
     repeated_assign_exprs = Any[]
     for (lhs_idx, rhs0) in repeated_rule_defs
         rhs =
@@ -157,21 +160,25 @@ function build_symbol_observer_no_cast(mdl, symbol_name::String)
     end
 
     fexpr = quote
-        let pvals0 = $pvals
-            (u, t) -> begin
-                ns = length(u)
-                T = eltype(u)
-                z = Vector{T}(undef, $zlen)
-                @inbounds begin
-                    z[1:ns] .= u
-                    z[ns+1:ns+$np] .= T.(pvals0)
-                    $(repeated_assign_exprs...)
-                end
-                return z[$target_idx]
+        (u, t, pvals) -> begin
+            ns = length(u)
+            T = eltype(u)
+            z = Vector{T}(undef, $zlen)
+            @inbounds begin
+                z[1:ns] .= u
+                z[ns+1:ns+$np] .= pvals
+                $(repeated_assign_exprs...)
             end
+            return z[$target_idx]
         end
     end
-    return Base.invokelatest(Core.eval, TCellEngagerQSP, fexpr)
+    obs_rgf = RuntimeGeneratedFunction(
+        TCellEngagerQSP,
+        TCellEngagerQSP,
+        TCellEngagerQSP.normalize_function_expr(fexpr),
+    )
+    pvals0 = copy(mdl.pvals)
+    return (u, t) -> obs_rgf(u, t, pvals0)
 end
 
 function solve_segment(prob::PatientProblem, u0, tspan::Tuple{Float64,Float64}, saveat::Vector{Float64})
@@ -223,7 +230,7 @@ function simulate_patient(prob::PatientProblem, doses_mg::AbstractVector{T}; sav
             for j in eachindex(sol_pre.t)
                 tj = Float64(sol_pre.t[j])
                 uj = sol_pre.u[j]
-                il6v = Base.invokelatest(prob.il6_obs_fun, uj, sol_pre.t[j])
+                il6v = prob.il6_obs_fun(uj, sol_pre.t[j])
                 if tj <= prob.tox_window_days + 1e-12
                     push!(tox_vals, il6v)
                 end
@@ -245,14 +252,14 @@ function simulate_patient(prob::PatientProblem, doses_mg::AbstractVector{T}; sav
             bt0 = u_curr[prob.bt_idx]
         end
         if t_curr <= prob.tox_window_days + 1e-12
-            push!(tox_vals, Base.invokelatest(prob.il6_obs_fun, u_curr, t_curr))
+            push!(tox_vals, prob.il6_obs_fun(u_curr, t_curr))
         end
 
         if save_trajectory
             if isempty(t_all) || !isapprox(t_curr, t_all[end]; atol = 1e-12, rtol = 0.0)
                 push!(t_all, t_curr)
                 push!(bt_all, Float64(u_curr[prob.bt_idx]))
-                push!(il6_all, Float64(Base.invokelatest(prob.il6_obs_fun, u_curr, t_curr)))
+                push!(il6_all, Float64(prob.il6_obs_fun(u_curr, t_curr)))
             end
         end
     end
@@ -269,7 +276,7 @@ function simulate_patient(prob::PatientProblem, doses_mg::AbstractVector{T}; sav
         for j in eachindex(sol_post.t)
             tj = Float64(sol_post.t[j])
             uj = sol_post.u[j]
-            il6v = Base.invokelatest(prob.il6_obs_fun, uj, sol_post.t[j])
+            il6v = prob.il6_obs_fun(uj, sol_post.t[j])
             if tj <= prob.tox_window_days + 1e-12
                 push!(tox_vals, il6v)
             end
