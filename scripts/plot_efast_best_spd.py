@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -11,9 +12,10 @@ import pandas as pd
 def parse_args() -> argparse.Namespace:
     repo = Path(__file__).resolve().parents[1]
     default_dir = repo / "generated" / "figures" / "sensitivity" / "efast_best_spd"
-    ap = argparse.ArgumentParser(description="Plot eFAST first-order and total sensitivity indices for best %SPD.")
+    ap = argparse.ArgumentParser(description="Plot eFAST first-order and total sensitivity indices.")
     ap.add_argument("--in-dir", type=Path, default=default_dir)
     ap.add_argument("--indices-csv", type=Path, default=None)
+    ap.add_argument("--meta-json", type=Path, default=None)
     ap.add_argument("--out", type=Path, default=None)
     return ap.parse_args()
 
@@ -31,6 +33,11 @@ def main() -> None:
     if not out_path.is_absolute():
         out_path = (Path.cwd() / out_path).resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    meta_path = args.meta_json
+    if meta_path is None:
+        cand = idx_path.parent / idx_path.name.replace("_indices.csv", "_meta.json")
+        meta_path = cand if cand.is_file() else None
 
     df = pd.read_csv(idx_path).copy()
     if "rank_ST" in df.columns:
@@ -51,7 +58,17 @@ def main() -> None:
     ax.set_yticklabels(df["parameter"].tolist())
     ax.invert_yaxis()
     ax.set_xlabel("Sensitivity index")
-    ax.set_title("eFAST Sensitivity for best %SPD (8-cycle step-up regimen)")
+    title = "eFAST Sensitivity"
+    if meta_path is not None and meta_path.is_file():
+        with meta_path.open("r") as f:
+            meta = json.load(f)
+        output = meta.get("output")
+        horizon = meta.get("horizon_days")
+        if output is not None:
+            title = f"eFAST Sensitivity for {output}"
+        if horizon is not None:
+            title = f"{title} ({horizon:g}-day regimen)"
+    ax.set_title(title)
     ax.legend(loc="lower right", frameon=False)
     ax.grid(False)
 
