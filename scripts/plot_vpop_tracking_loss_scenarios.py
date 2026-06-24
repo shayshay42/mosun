@@ -52,7 +52,10 @@ def main() -> None:
         vals = np.log10(np.maximum(vals_raw, 1e-12)) if log_space else vals_raw
         if len(vals) == 0:
             continue
-        med_raw = float(np.median(vals_raw))
+        finite_raw = vals_raw[np.isfinite(vals_raw)]
+        if len(finite_raw) == 0:
+            continue
+        med_raw = float(np.median(finite_raw))
         plot_kde(ax, vals, f"{label[sc]} (median={med_raw:.4g})", color[sc])
 
     ax.set_title("VPop Tracking Loss Distribution by Dosing Scenario" + (" (log10 space)" if log_space else ""))

@@ -8,8 +8,7 @@ using Base.Threads
 
 include(joinpath(@__DIR__, "optimize_clinical_lhs_cohort_dosing.jl"))
 
-const REPO_ROOT = TCellEngagerQSP.REPO_ROOT
-const MMC = TCellEngagerQSP.MosunModelCore
+const REPO_ROOT = MMC.REPO_ROOT
 
 function loss_scales_from_summary(summary)
     s = summary["scales"]

@@ -93,8 +93,15 @@ def main() -> None:
         metrics_path = Path(metrics_env) if Path(metrics_env).is_absolute() else (repo / metrics_env)
 
     design_path = repo / "generated" / "phase1_design_standard" / "regimen_events.csv"
-    out_dir = repo / "generated" / "figures"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path_env = os.getenv("PHASE1_PROXY_KDE_OUT_PATH", "").strip()
+    if out_path_env:
+        out_path = Path(out_path_env)
+        out_path = out_path if out_path.is_absolute() else (repo / out_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        out_dir = repo / "generated" / "figures"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / "phase1_proxy_kde_scaled_fixed_stepup_4panel.png"
 
     if not metrics_path.exists():
         raise FileNotFoundError(f"Missing metrics file: {metrics_path}")
@@ -139,6 +146,39 @@ def main() -> None:
         .mean(numeric_only=True)
         .sort_values("regimen")
     )
+    summary_path_env = os.getenv("PHASE1_PROXY_KDE_SUMMARY_PATH", "").strip()
+    if summary_path_env:
+        summary_path = Path(summary_path_env)
+        summary_path = summary_path if summary_path.is_absolute() else (repo / summary_path)
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary.to_csv(summary_path, index=False)
+
+    meta_path_env = os.getenv("PHASE1_PROXY_KDE_META_PATH", "").strip()
+    if meta_path_env:
+        import json
+
+        meta_path = Path(meta_path_env)
+        meta_path = meta_path if meta_path.is_absolute() else (repo / meta_path)
+        meta_path.parent.mkdir(parents=True, exist_ok=True)
+        meta_path.write_text(
+            json.dumps(
+                {
+                    "created_by": "scripts/plot_phase1_proxy_kde_fixed_stepup.py",
+                    "metrics_csv": str(metrics_path),
+                    "output_png": str(out_path),
+                    "summary_csv": str(summary_path) if summary_path_env else None,
+                    "loss_weight_tox": w_tox,
+                    "loss_weight_tumor": w_tum,
+                    "tox_scale": tox_scale,
+                    "tumor_scale": tumor_scale,
+                    "scale_source": scale_source,
+                    "n_rows": int(len(df)),
+                    "n_regimens": int(df["regimen"].nunique()),
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
     legend_map = {
         row.regimen: (
             f"{row.regimen} "
@@ -201,7 +241,6 @@ def main() -> None:
     )
     fig.tight_layout(rect=[0, 0, 1, 0.97])
 
-    out_path = out_dir / "phase1_proxy_kde_scaled_fixed_stepup_4panel.png"
     fig.savefig(out_path, dpi=180)
     plt.close(fig)
     print(out_path)

@@ -63,6 +63,34 @@ or
 $env:TCE_CORE_MODE = "legacy_reference"
 ```
 
+## Repository Boundary
+
+The intended direction is now:
+
+1. production optimization, benchmarking, and simulation scripts should include [MosunModelCore.jl](../julia/src/MosunModelCore.jl) directly
+2. [TCellEngagerQSP.jl](../julia/src/TCellEngagerQSP.jl) should remain the compatibility layer for:
+   - MATLAB/reference reproduction
+   - table-driven legacy model reconstruction
+   - MTK/Jacobian helper paths that are still reference-only
+
+This repo now has a first production-side extraction in that direction:
+
+- [optimize_clinical_lhs_cohort_dosing.jl](../julia/optimize_clinical_lhs_cohort_dosing.jl)
+- [optimize_clinical_lhs_individual_dosing_compare.jl](../julia/optimize_clinical_lhs_individual_dosing_compare.jl)
+- [objective_benchmark_paper84.jl](../julia/objective_benchmark_paper84.jl)
+- [run_clinical_lhs_regimen_sample.jl](../julia/run_clinical_lhs_regimen_sample.jl)
+- [benchmark_single_sample_dose_methods_mosun.jl](../julia/benchmark_single_sample_dose_methods_mosun.jl)
+
+Those production scripts now depend on `MosunModelCore` directly for:
+
+- `REPO_ROOT`
+- solver tolerances
+- solver factory helpers
+- parameter/state/regimen construction
+- forward solve APIs
+
+That shrinks the amount of repo surface area that must load the compatibility module.
+
 ## Validation Coverage
 
 Validation is split into three layers:

@@ -4,19 +4,96 @@ using SciMLBase
 using DifferentialEquations
 using DiffEqCallbacks
 using ForwardDiff
+using ReverseDiff
+using Sundials
+
+const REPO_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
+const SOLVER_ABSTOL = parse(Float64, get(ENV, "TCE_ABSTOL", "1e-8"))
+const SOLVER_RELTOL = parse(Float64, get(ENV, "TCE_RELTOL", "1e-5"))
+const SMOOTH_POSITIVE_EPS = parse(Float64, get(ENV, "TCE_SMOOTH_POSITIVE_EPS", "1e-8"))
+const TDBC_CUTOFF_UGPML = parse(Float64, get(ENV, "TCE_TDBC_CUTOFF_UGPML", "1e-5"))
+const TDBC_GATE_EPS = parse(Float64, get(ENV, "TCE_TDBC_GATE_EPS", "1e-6"))
+
+function make_solver_alg(solver_name::AbstractString)
+    solver = lowercase(String(solver_name))
+    if solver == "cvode_bdf"
+        return CVODE_BDF()
+    elseif solver == "qndf"
+        return QNDF(autodiff = false)
+    elseif solver == "rodas4p"
+        return Rodas4P(autodiff = false)
+    elseif solver == "kencarp4"
+        return KenCarp4(autodiff = false)
+    elseif solver == "vcabm"
+        return VCABM()
+    elseif solver == "tsit5"
+        return Tsit5()
+    else
+        error("Unsupported solver=$solver. Use cvode_bdf, qndf, rodas4p, kencarp4, vcabm, or tsit5.")
+    end
+end
+
+function make_solver_alg()
+    solver = lowercase(get(ENV, "TCE_SOLVER", "cvode_bdf"))
+    return make_solver_alg(solver)
+end
 
 pow_safe(a::Float64, b::Float64) = Float64(real((complex(a) ^ b)))
 pow_safe(a::Float64, b::Integer) = Float64(real((complex(a) ^ b)))
 pow_safe(a::Real, b::Real) = real((complex(a) ^ b))
 pow_safe(a, b) = a ^ b
+@inline function pow_safe(a::ReverseDiff.TrackedReal, b::Real)
+    ReverseDiff.value(a) <= 0 ? zero(a) : exp(b * log(a))
+end
+@inline function pow_safe(a::Real, b::ReverseDiff.TrackedReal)
+    a <= 0 ? zero(b) : exp(b * log(a))
+end
+@inline function pow_safe(a::ReverseDiff.TrackedReal, b::ReverseDiff.TrackedReal)
+    ReverseDiff.value(a) <= 0 ? zero(a + b) : exp(b * log(a))
+end
 pow_safe_symbolic(a::Float64, b::Float64) = pow_safe(a, b)
 pow_safe_symbolic(a::Float64, b::Integer) = pow_safe(a, b)
 pow_safe_symbolic(a::Real, b::Real) = pow_safe(a, b)
 pow_safe_symbolic(a, b) = pow_safe(a, b)
 
+@inline function smooth_positive_part(x, eps::Real = SMOOTH_POSITIVE_EPS)
+    epsx = oftype(x, eps)
+    return (x + sqrt(x * x + epsx * epsx)) / 2
+end
+
+@inline function smooth_positive_part_deriv(x, eps::Real = SMOOTH_POSITIVE_EPS)
+    epsx = oftype(x, eps)
+    return (one(x) + x / sqrt(x * x + epsx * epsx)) / 2
+end
+
+@inline function smooth_heaviside(x, eps::Real = TDBC_GATE_EPS)
+    epsx = oftype(x, eps)
+    return (one(x) + x / sqrt(x * x + epsx * epsx)) / 2
+end
+
+@inline function smooth_heaviside_deriv(x, eps::Real = TDBC_GATE_EPS)
+    epsx = oftype(x, eps)
+    return (epsx * epsx) / (2 * (x * x + epsx * epsx)^(3 / 2))
+end
+
+@inline function smooth_tdbc_cutoff(val, threshold::Real = TDBC_CUTOFF_UGPML; pos_eps::Real = SMOOTH_POSITIVE_EPS, gate_eps::Real = TDBC_GATE_EPS)
+    pos_val = smooth_positive_part(val, pos_eps)
+    z = val - oftype(val, threshold)
+    return pos_val * smooth_heaviside(z, gate_eps)
+end
+
+@inline function smooth_tdbc_cutoff_deriv(val, threshold::Real = TDBC_CUTOFF_UGPML; pos_eps::Real = SMOOTH_POSITIVE_EPS, gate_eps::Real = TDBC_GATE_EPS)
+    pos_val = smooth_positive_part(val, pos_eps)
+    pos_grad = smooth_positive_part_deriv(val, pos_eps)
+    z = val - oftype(val, threshold)
+    gate = smooth_heaviside(z, gate_eps)
+    gate_grad = smooth_heaviside_deriv(z, gate_eps)
+    return pos_grad * gate + pos_val * gate_grad
+end
+
 @inline function tdb_central_concentration(TDBc_ugperkg, Vc_tdb, PKflag, VPid, t, end_time, fvalidation)
     val = TDBc_ugperkg / Vc_tdb
-    return ifelse(val > 1e-5, val, zero(val))
+    return smooth_tdbc_cutoff(val)
 end
 @inline tdb_central_concentration_symbolic(TDBc_ugperkg, Vc_tdb, PKflag, VPid, t, end_time, fvalidation) = TDBc_ugperkg / Vc_tdb
 
@@ -2629,6 +2706,7 @@ end
 
 export MosunParams, MosunDynamicState, MosunObservablesCache, MosunRegimenEvent, MosunRegimen, MosunProblemContext, MosunBuiltProblem, MosunVectorBuiltProblem,
     DYNAMIC_STATE_NAMES, OBSERVABLE_NAMES, RHS_OBSERVABLE_NAMES, PARAMETER_NAMES, DEAD_LEGACY_NAMES, DYNAMIC_STATE_COUNT, OBSERVABLE_COUNT, RHS_OBSERVABLE_COUNT,
+    REPO_ROOT, SOLVER_ABSTOL, SOLVER_RELTOL, make_solver_alg,
     default_params, zero_observables_cache, has_parameter, set_param!, params_from_named_values, params_from_dict, bolus_regimen,
     parameter_index, default_param_vector, initial_state, initial_state_vector, pack_state, pack_params, unpack_state, update_observables!, value_at, mosun_rhs!, mosun_rhs_vector!, build_problem, build_problem_vector, solve_problem, solve_regimen, solve_regimen_vector,
     observable, dynamic_state_value, state_or_observable, dynamic_state_index, regimen_to_event_map, apply_event_deltas!

@@ -45,6 +45,63 @@ PowerShell:
 pwsh ./scripts/windows/setup_windows.ps1 -RepoRoot . -PythonExe python -JuliaExe julia
 ```
 
+## MOSUN Julia VPop Pipeline
+
+The current production path for mosunetuzumab work is `MosunModelCore`, a checked-in Julia ODE implementation designed for validation, sensitivity analysis, and dose/VPop workflows. Generated campaign outputs should be written under ignored `generated/` subdirectories; only lightweight reference manifests and source inputs are tracked.
+
+### Validate the Julia model
+
+```bash
+julia --project=./julia julia/test/runtests.jl
+julia --project=./julia julia/test_canonical_not_worse.jl
+```
+
+For implementation notes and validation layers, see `docs/MOSUN_MODEL_CORE_VALIDATION.md`.
+
+### Run a small eFAST smoke test
+
+This exercises the Fig. 5 eFAST sensitivity runner with a tiny parameter/regimen subset and writes ignored outputs.
+
+```bash
+SUSILO_FIG5_EFAST_OUT_DIR=generated/tmp_publish_smoke/susilo_fig5_efast \
+SUSILO_FIG5_EFAST_N=65 \
+SUSILO_FIG5_EFAST_M=4 \
+SUSILO_FIG5_EFAST_PARAM_LIMIT=3 \
+SUSILO_FIG5_EFAST_REGIMEN_LIMIT=2 \
+julia --project=./julia julia/run_susilo_fig5_il6_dummy_efast.jl
+```
+
+PowerShell equivalent:
+
+```powershell
+$env:SUSILO_FIG5_EFAST_OUT_DIR = "generated/tmp_publish_smoke/susilo_fig5_efast"
+$env:SUSILO_FIG5_EFAST_N = "65"
+$env:SUSILO_FIG5_EFAST_M = "4"
+$env:SUSILO_FIG5_EFAST_PARAM_LIMIT = "3"
+$env:SUSILO_FIG5_EFAST_REGIMEN_LIMIT = "2"
+julia --project=./julia julia/run_susilo_fig5_il6_dummy_efast.jl
+```
+
+Full eFAST runs use the same entrypoints without the smoke limits. The main Fig. 5 sensitivity scripts are:
+
+- `julia/run_susilo_fig5_il6_dummy_efast.jl`
+- `julia/run_susilo_fig5_il6_day84_checkpointed_efast.jl`
+- `scripts/plot_susilo_fig5_il6_dummy_efast.py`
+- `scripts/plot_susilo_fig5_il6_day84_checkpointed_efast.py`
+
+The default parameter-range input is `generated/figures/reference/dlbcl_stack_parameter_ranges_all/dlbcl_stack_parameter_ranges_all.csv`.
+
+### Generate and prune the Hosseini Fig. 5 VPop
+
+After eFAST candidate/resimulation outputs are available, build the candidate set and prune to a VPop using the digitized Hosseini Fig. 5 targets in `assets/digitization_hosseini_2020_vpop/`:
+
+```bash
+python scripts/build_susilo_efast_hosseini2020_vpop250_candidate_set.py
+python scripts/prune_susilo_efast_hosseini2020_fig5_vpop250.py
+```
+
+The pruning script writes selected-parameter, trajectory, waterfall, diagnostics, and manifest files under `generated/figures/vpop_pruning/...` by default. Those outputs are intentionally ignored unless a specific lightweight manifest is promoted for publication.
+
 ## Core Workflows
 
 ### Run phase-1 sweep (canonical Julia)

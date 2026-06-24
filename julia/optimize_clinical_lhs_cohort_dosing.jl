@@ -12,11 +12,11 @@ using Statistics
 using Sundials
 using Base.Threads
 
-include(joinpath(@__DIR__, "src", "TCellEngagerQSP.jl"))
-using .TCellEngagerQSP
+include(joinpath(@__DIR__, "src", "MosunModelCore.jl"))
+using .MosunModelCore
 
-const MMC = TCellEngagerQSP.MosunModelCore
-const REPO_ROOT = TCellEngagerQSP.REPO_ROOT
+const MMC = MosunModelCore
+const REPO_ROOT = MMC.REPO_ROOT
 
 BLAS.set_num_threads(1)
 

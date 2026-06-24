@@ -4,6 +4,10 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Draft/private local material
+assets/prompts/
+docs/manuscript/
+
 # Python
 __pycache__/
 *.pyc
@@ -16,10 +20,31 @@ venv/
 *.ji
 
 # Generated runtime outputs (keep core exported model tables/bundles under generated/)
+*.tar
+*.tar.gz
 generated/figures/
 generated/vpop_pruning/
+generated/server_results/
+generated/benchmarks/
+generated/loss_history/
+generated/reference/
 generated/tmp_*/
+generated/farm_supervisor_smoke/
+generated/full1000_server_smoke/
+generated/*_smoke/
+generated/*_smoke*/
+generated/*_dryrun*/
+generated/*_pilot*/
+generated/invokelatest_*/
+generated/tmp_parameter_names.txt
 generated/phase1_julia/
 generated/cycle1_loss/
 generated/gradient_checks/
+generated/gradient_checks_solver_rank/
 generated/solver_trials/
+generated/random_regimen_84_design/
+generated/random_regimen_84_run_*/
+generated/single_solve_bench*/
+generated/smoke_endpoint_cycle*/
+generated/vpop_best200_all_regimens_*/
+generated/vpop_hml6_parallel_run_*/

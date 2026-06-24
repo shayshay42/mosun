@@ -3,3 +3,6 @@ pandas>=2.0
 scipy>=1.10
 matplotlib>=3.7
 openpyxl>=3.1
+seaborn>=0.13
+statsmodels>=0.14
+scikit-learn>=1.3
