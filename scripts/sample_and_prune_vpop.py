@@ -221,6 +221,7 @@ def run_julia_sweep(
     env["TCE_ABSTOL"] = str(sim_cfg.get("abstol", 1e-8))
     env["TCE_RELTOL"] = str(sim_cfg.get("reltol", 1e-5))
     env["PHASE1_VARIANTS_MODE"] = str(sim_cfg.get("variants_mode", "matlab_empty"))
+    env["PHASE1_HORIZON_DAYS"] = str(sim_cfg.get("horizon_day", 84.0))
 
     if julia_bin:
         julia_exec = julia_bin
@@ -456,6 +457,51 @@ def safe_mean(x: np.ndarray) -> float:
     return float(np.mean(x))
 
 
+def wasserstein_distance_1d(x: np.ndarray, y: np.ndarray) -> float:
+    xs = np.asarray(x, dtype=float)
+    ys = np.asarray(y, dtype=float)
+    xs = xs[np.isfinite(xs)]
+    ys = ys[np.isfinite(ys)]
+    if len(xs) == 0 or len(ys) == 0:
+        return float("inf")
+    xs = np.sort(xs)
+    ys = np.sort(ys)
+    z = np.sort(np.concatenate([xs, ys]))
+    if len(z) < 2:
+        return 0.0
+    dz = np.diff(z)
+    x_cdf = np.searchsorted(xs, z[:-1], side="right") / float(len(xs))
+    y_cdf = np.searchsorted(ys, z[:-1], side="right") / float(len(ys))
+    return float(np.sum(np.abs(x_cdf - y_cdf) * dz))
+
+
+def score_subset_wasserstein_spd88(
+    feature_table: pd.DataFrame,
+    subset_idx: np.ndarray,
+    feature_col: str,
+    target_values: np.ndarray,
+    weight: float,
+) -> tuple[float, list[dict[str, Any]]]:
+    rows = feature_table.iloc[subset_idx]
+    if feature_col not in rows.columns:
+        raise ValueError(f"Missing Wasserstein feature column: {feature_col}")
+    vals = rows[feature_col].to_numpy(dtype=float)
+    wdist = wasserstein_distance_1d(vals, target_values)
+    term = float(weight) * wdist
+    details = [
+        {
+            "target_id": "spd88_wasserstein_distance",
+            "evaluation_mode": "wasserstein_distance",
+            "feature_column": feature_col,
+            "achieved_value": wdist,
+            "target_value": 0.0,
+            "weight": float(weight),
+            "weighted_term": term,
+        }
+    ]
+    return term, details
+
+
 def score_subset(
     feature_table: pd.DataFrame,
     subset_idx: np.ndarray,
@@ -604,6 +650,277 @@ def random_subset_search(
     return best_idx, float(best_score), best_details, pd.DataFrame(trace_rows)
 
 
+def guided_subset_search_ce(
+    feature_table: pd.DataFrame,
+    n_select: int,
+    n_draws: int,
+    seed: int,
+    targets: list[CalibrationTarget],
+    crs_thresholds: dict[str, dict[str, Any]],
+    shape_cfg: dict[str, Any],
+    ce_batch_size: int,
+    ce_elite_frac: float,
+    ce_smoothing: float,
+    ce_min_prob_frac: float,
+    local_swaps: int,
+) -> tuple[np.ndarray, float, list[dict[str, Any]], pd.DataFrame, pd.DataFrame]:
+    rng = np.random.default_rng(seed)
+    n = len(feature_table)
+    if n_select > n:
+        raise ValueError(f"n_select={n_select} cannot exceed available patients with complete simulations ({n}).")
+    if n_draws < 1:
+        raise ValueError("n_draws must be >= 1 for guided search.")
+
+    ce_batch_size = max(1, int(ce_batch_size))
+    ce_elite_frac = max(1e-3, min(float(ce_elite_frac), 0.9))
+    ce_smoothing = max(1e-3, min(float(ce_smoothing), 1.0))
+    ce_min_prob_frac = max(0.0, min(float(ce_min_prob_frac), 1.0))
+
+    all_idx = np.arange(n)
+    probs = np.full(n, 1.0 / n, dtype=float)
+
+    best_idx = None
+    best_score = np.inf
+    best_details: list[dict[str, Any]] = []
+    trace_rows: list[dict[str, Any]] = []
+    draw_id = 0
+
+    remaining = int(n_draws)
+    iter_id = 0
+    while remaining > 0:
+        iter_id += 1
+        batch_n = min(ce_batch_size, remaining)
+        batch_scores: list[float] = []
+        batch_subsets: list[np.ndarray] = []
+        batch_details: list[list[dict[str, Any]]] = []
+
+        for _ in range(batch_n):
+            idx = np.sort(rng.choice(all_idx, size=n_select, replace=False, p=probs))
+            score, details = score_subset(feature_table, idx, targets, crs_thresholds, shape_cfg)
+            draw_id += 1
+            trace_rows.append({"draw": draw_id, "objective": score, "phase": "guided_ce", "iter": iter_id})
+            batch_scores.append(float(score))
+            batch_subsets.append(idx)
+            batch_details.append(details)
+            if score < best_score:
+                best_score = float(score)
+                best_idx = idx
+                best_details = details
+
+        elite_n = max(1, int(np.ceil(ce_elite_frac * batch_n)))
+        elite_order = np.argsort(np.asarray(batch_scores, dtype=float))[:elite_n]
+        elite_freq = np.zeros(n, dtype=float)
+        for k in elite_order:
+            elite_freq[batch_subsets[int(k)]] += 1.0
+        elite_freq /= max(float(elite_n * n_select), 1e-12)  # sums to ~1
+
+        probs = (1.0 - ce_smoothing) * probs + ce_smoothing * elite_freq
+        if ce_min_prob_frac > 0:
+            min_prob = ce_min_prob_frac / n
+            probs = np.maximum(probs, min_prob)
+        probs /= probs.sum()
+
+        remaining -= batch_n
+
+    assert best_idx is not None
+
+    current_idx = best_idx.copy()
+    current_score = float(best_score)
+    if local_swaps > 0:
+        selected_mask = np.zeros(n, dtype=bool)
+        selected_mask[current_idx] = True
+        selected = np.where(selected_mask)[0]
+        unselected = np.where(~selected_mask)[0]
+
+        for i in range(int(local_swaps)):
+            if len(unselected) == 0:
+                break
+            out_idx = int(rng.choice(selected))
+            in_idx = int(rng.choice(unselected))
+
+            trial = current_idx.copy()
+            pos = int(np.searchsorted(trial, out_idx))
+            if pos >= len(trial) or trial[pos] != out_idx:
+                continue
+            trial[pos] = in_idx
+            trial = np.sort(trial)
+
+            score, details = score_subset(feature_table, trial, targets, crs_thresholds, shape_cfg)
+            draw_id += 1
+            trace_rows.append({"draw": draw_id, "objective": score, "phase": "guided_local", "iter": i + 1})
+
+            if score < current_score:
+                current_idx = trial
+                current_score = float(score)
+                selected_mask[out_idx] = False
+                selected_mask[in_idx] = True
+                selected = np.where(selected_mask)[0]
+                unselected = np.where(~selected_mask)[0]
+                if score < best_score:
+                    best_score = float(score)
+                    best_idx = trial
+                    best_details = details
+
+    prob_tab = pd.DataFrame(
+        {
+            "feature_row_idx": np.arange(n, dtype=int),
+            "patient_id": feature_table["patient_id"].to_numpy(dtype=int),
+            "guided_sampling_probability": probs.astype(float),
+        }
+    ).sort_values("guided_sampling_probability", ascending=False)
+
+    return best_idx, float(best_score), best_details, pd.DataFrame(trace_rows), prob_tab
+
+
+def random_subset_search_wasserstein(
+    feature_table: pd.DataFrame,
+    n_select: int,
+    n_draws: int,
+    seed: int,
+    feature_col: str,
+    target_values: np.ndarray,
+    weight: float,
+) -> tuple[np.ndarray, float, list[dict[str, Any]], pd.DataFrame]:
+    rng = np.random.default_rng(seed)
+    n = len(feature_table)
+    if n_select > n:
+        raise ValueError(f"n_select={n_select} cannot exceed available patients with complete simulations ({n}).")
+
+    best_idx = None
+    best_score = np.inf
+    best_details: list[dict[str, Any]] = []
+    trace_rows: list[dict[str, Any]] = []
+
+    all_idx = np.arange(n)
+    for i in range(n_draws):
+        idx = np.sort(rng.choice(all_idx, size=n_select, replace=False))
+        score, details = score_subset_wasserstein_spd88(feature_table, idx, feature_col, target_values, weight)
+        trace_rows.append({"draw": i + 1, "objective": score, "phase": "wasserstein_random"})
+        if score < best_score:
+            best_score = score
+            best_idx = idx
+            best_details = details
+
+    assert best_idx is not None
+    return best_idx, float(best_score), best_details, pd.DataFrame(trace_rows)
+
+
+def guided_subset_search_ce_wasserstein(
+    feature_table: pd.DataFrame,
+    n_select: int,
+    n_draws: int,
+    seed: int,
+    feature_col: str,
+    target_values: np.ndarray,
+    weight: float,
+    ce_batch_size: int,
+    ce_elite_frac: float,
+    ce_smoothing: float,
+    ce_min_prob_frac: float,
+    local_swaps: int,
+) -> tuple[np.ndarray, float, list[dict[str, Any]], pd.DataFrame, pd.DataFrame]:
+    rng = np.random.default_rng(seed)
+    n = len(feature_table)
+    if n_select > n:
+        raise ValueError(f"n_select={n_select} cannot exceed available patients with complete simulations ({n}).")
+    if n_draws < 1:
+        raise ValueError("n_draws must be >= 1 for guided search.")
+
+    ce_batch_size = max(1, int(ce_batch_size))
+    ce_elite_frac = max(1e-3, min(float(ce_elite_frac), 0.9))
+    ce_smoothing = max(1e-3, min(float(ce_smoothing), 1.0))
+    ce_min_prob_frac = max(0.0, min(float(ce_min_prob_frac), 1.0))
+
+    all_idx = np.arange(n)
+    probs = np.full(n, 1.0 / n, dtype=float)
+
+    best_idx = None
+    best_score = np.inf
+    best_details: list[dict[str, Any]] = []
+    trace_rows: list[dict[str, Any]] = []
+    draw_id = 0
+
+    remaining = int(n_draws)
+    iter_id = 0
+    while remaining > 0:
+        iter_id += 1
+        batch_n = min(ce_batch_size, remaining)
+        batch_scores: list[float] = []
+        batch_subsets: list[np.ndarray] = []
+
+        for _ in range(batch_n):
+            idx = np.sort(rng.choice(all_idx, size=n_select, replace=False, p=probs))
+            score, details = score_subset_wasserstein_spd88(feature_table, idx, feature_col, target_values, weight)
+            draw_id += 1
+            trace_rows.append({"draw": draw_id, "objective": score, "phase": "wasserstein_guided_ce", "iter": iter_id})
+            batch_scores.append(float(score))
+            batch_subsets.append(idx)
+            if score < best_score:
+                best_score = float(score)
+                best_idx = idx
+                best_details = details
+
+        elite_n = max(1, int(np.ceil(ce_elite_frac * batch_n)))
+        elite_order = np.argsort(np.asarray(batch_scores, dtype=float))[:elite_n]
+        elite_freq = np.zeros(n, dtype=float)
+        for k in elite_order:
+            elite_freq[batch_subsets[int(k)]] += 1.0
+        elite_freq /= max(float(elite_n * n_select), 1e-12)
+
+        probs = (1.0 - ce_smoothing) * probs + ce_smoothing * elite_freq
+        if ce_min_prob_frac > 0:
+            min_prob = ce_min_prob_frac / n
+            probs = np.maximum(probs, min_prob)
+        probs /= probs.sum()
+        remaining -= batch_n
+
+    assert best_idx is not None
+    current_idx = best_idx.copy()
+    current_score = float(best_score)
+    if local_swaps > 0:
+        selected_mask = np.zeros(n, dtype=bool)
+        selected_mask[current_idx] = True
+        selected = np.where(selected_mask)[0]
+        unselected = np.where(~selected_mask)[0]
+
+        for i in range(int(local_swaps)):
+            if len(unselected) == 0:
+                break
+            out_idx = int(rng.choice(selected))
+            in_idx = int(rng.choice(unselected))
+            trial = current_idx.copy()
+            pos = int(np.searchsorted(trial, out_idx))
+            if pos >= len(trial) or trial[pos] != out_idx:
+                continue
+            trial[pos] = in_idx
+            trial = np.sort(trial)
+
+            score, details = score_subset_wasserstein_spd88(feature_table, trial, feature_col, target_values, weight)
+            draw_id += 1
+            trace_rows.append({"draw": draw_id, "objective": score, "phase": "wasserstein_guided_local", "iter": i + 1})
+            if score < current_score:
+                current_idx = trial
+                current_score = float(score)
+                selected_mask[out_idx] = False
+                selected_mask[in_idx] = True
+                selected = np.where(selected_mask)[0]
+                unselected = np.where(~selected_mask)[0]
+                if score < best_score:
+                    best_score = float(score)
+                    best_idx = trial
+                    best_details = details
+
+    prob_tab = pd.DataFrame(
+        {
+            "feature_row_idx": np.arange(n, dtype=int),
+            "patient_id": feature_table["patient_id"].to_numpy(dtype=int),
+            "guided_sampling_probability": probs.astype(float),
+        }
+    ).sort_values("guided_sampling_probability", ascending=False)
+
+    return best_idx, float(best_score), best_details, pd.DataFrame(trace_rows), prob_tab
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sample candidate VPs, simulate in Julia, and prune against calibration targets.")
     parser.add_argument("--targets-json", type=Path, default=Path("generated/vpop_targets/vpop_calibration_targets.json"))
@@ -617,7 +934,29 @@ def main() -> None:
     parser.add_argument("--n-select", type=int, default=0)
     parser.add_argument("--n-random-subsets", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--subset-seed",
+        type=int,
+        default=0,
+        help="Optional seed for random subset search. If 0, uses seed+17.",
+    )
     parser.add_argument("--spread-mode", choices=["primary", "sensitivity"], default="primary")
+    parser.add_argument("--objective-mode", type=str, default="")
+    parser.add_argument("--search-method", type=str, default="")
+    parser.add_argument("--ce-batch-size", type=int, default=0)
+    parser.add_argument("--ce-elite-frac", type=float, default=-1.0)
+    parser.add_argument("--ce-smoothing", type=float, default=-1.0)
+    parser.add_argument("--ce-min-prob-frac", type=float, default=-1.0)
+    parser.add_argument("--guided-local-swaps", type=int, default=-1)
+    parser.add_argument(
+        "--wasserstein-spd88-csv",
+        type=Path,
+        default=Path("generated/reference/musun_2022_88patients_SPD_from_vpop_generation_3a50cd1.csv"),
+    )
+    parser.add_argument("--wasserstein-spd88-column", type=str, default="SPD")
+    parser.add_argument("--wasserstein-feature", type=str, default="best_spd_pct")
+    parser.add_argument("--wasserstein-regimen", type=str, default="step_1_2_60_30mg_8cycles")
+    parser.add_argument("--wasserstein-weight", type=float, default=1.0)
     parser.add_argument("--julia-project", type=str, default="")
     parser.add_argument("--julia-bin", type=str, default="")
     parser.add_argument("--skip-sim", action="store_true")
@@ -634,6 +973,28 @@ def main() -> None:
     n_select = args.n_select or int(sampling_defaults.get("n_select", 140))
     seed = args.seed or int(sampling_defaults.get("seed", 20260228))
     n_draws = args.n_random_subsets or int(objective_defaults.get("n_random_subsets", 3000))
+    subset_seed = args.subset_seed if args.subset_seed else (seed + 17)
+    objective_mode = (args.objective_mode.strip() or str(objective_defaults.get("objective_mode", "plan_targets"))).lower()
+    if objective_mode not in {"plan_targets", "wasserstein_spd88"}:
+        raise ValueError(f"Unsupported --objective-mode {objective_mode}. Use plan_targets or wasserstein_spd88.")
+    search_method = (args.search_method.strip() or str(objective_defaults.get("subset_search_method", "random"))).lower()
+    if search_method not in {"random", "guided_ce"}:
+        raise ValueError(f"Unsupported --search-method {search_method}. Use random or guided_ce.")
+    ce_batch_size = args.ce_batch_size if args.ce_batch_size > 0 else int(objective_defaults.get("ce_batch_size", 256))
+    ce_elite_frac = (
+        args.ce_elite_frac if args.ce_elite_frac > 0 else float(objective_defaults.get("ce_elite_frac", 0.12))
+    )
+    ce_smoothing = (
+        args.ce_smoothing if args.ce_smoothing > 0 else float(objective_defaults.get("ce_smoothing", 0.25))
+    )
+    ce_min_prob_frac = (
+        args.ce_min_prob_frac
+        if args.ce_min_prob_frac >= 0
+        else float(objective_defaults.get("ce_min_prob_frac", 0.02))
+    )
+    guided_local_swaps = (
+        args.guided_local_swaps if args.guided_local_swaps >= 0 else int(objective_defaults.get("guided_local_swaps", 0))
+    )
 
     include_default = int(objective_defaults.get("include_standard_phase1_regimens", 1))
     include_standard = bool(include_default if args.include_standard_regimens < 0 else args.include_standard_regimens)
@@ -705,31 +1066,110 @@ def main() -> None:
     regimen_names = sorted(reg_events["regimen"].astype(str).unique().tolist())
     feature_table = build_feature_table(metrics, regimen_names)
 
-    targets = parse_targets(plan)
-    crs_thresholds = choose_crs_thresholds(feature_table, targets)
-    regimen_meta = build_regimen_metadata(reg_events)
-    shape_cfg = build_shape_config(feature_table, regimen_meta, objective_defaults)
+    targets: list[CalibrationTarget] = []
+    crs_thresholds: dict[str, dict[str, Any]] = {}
+    shape_cfg: dict[str, Any] = {"enabled": False}
+    wasserstein_cfg: dict[str, Any] = {}
 
-    best_idx, best_score, best_details, trace = random_subset_search(
-        feature_table=feature_table,
-        n_select=n_select,
-        n_draws=n_draws,
-        seed=seed + 17,
-        targets=targets,
-        crs_thresholds=crs_thresholds,
-        shape_cfg=shape_cfg,
-    )
+    guided_prob_tab: pd.DataFrame | None = None
+    if objective_mode == "wasserstein_spd88":
+        ws_csv = (repo / args.wasserstein_spd88_csv) if not args.wasserstein_spd88_csv.is_absolute() else args.wasserstein_spd88_csv
+        ws_df = pd.read_csv(ws_csv)
+        ws_col = str(args.wasserstein_spd88_column)
+        if ws_col not in ws_df.columns:
+            raise ValueError(f"Missing Wasserstein reference column '{ws_col}' in {ws_csv}")
+        ws_target_vals = pd.to_numeric(ws_df[ws_col], errors="coerce").dropna().to_numpy(dtype=float)
+        if len(ws_target_vals) == 0:
+            raise ValueError(f"No finite Wasserstein reference values found in {ws_csv}:{ws_col}")
+
+        ws_regimen = normalize_regimen_name(str(args.wasserstein_regimen))
+        ws_feature_col = f"{args.wasserstein_feature}__{ws_regimen}"
+        if ws_feature_col not in feature_table.columns:
+            raise ValueError(
+                f"Wasserstein feature column '{ws_feature_col}' missing from candidate features. "
+                f"Available columns: {', '.join(feature_table.columns[:30])}..."
+            )
+        ws_weight = float(args.wasserstein_weight)
+        wasserstein_cfg = {
+            "reference_csv": str(ws_csv),
+            "reference_column": ws_col,
+            "feature": str(args.wasserstein_feature),
+            "regimen": ws_regimen,
+            "feature_column": ws_feature_col,
+            "weight": ws_weight,
+            "n_reference": int(len(ws_target_vals)),
+        }
+
+        if search_method == "guided_ce":
+            best_idx, best_score, best_details, trace, guided_prob_tab = guided_subset_search_ce_wasserstein(
+                feature_table=feature_table,
+                n_select=n_select,
+                n_draws=n_draws,
+                seed=subset_seed,
+                feature_col=ws_feature_col,
+                target_values=ws_target_vals,
+                weight=ws_weight,
+                ce_batch_size=ce_batch_size,
+                ce_elite_frac=ce_elite_frac,
+                ce_smoothing=ce_smoothing,
+                ce_min_prob_frac=ce_min_prob_frac,
+                local_swaps=guided_local_swaps,
+            )
+        else:
+            best_idx, best_score, best_details, trace = random_subset_search_wasserstein(
+                feature_table=feature_table,
+                n_select=n_select,
+                n_draws=n_draws,
+                seed=subset_seed,
+                feature_col=ws_feature_col,
+                target_values=ws_target_vals,
+                weight=ws_weight,
+            )
+    else:
+        targets = parse_targets(plan)
+        crs_thresholds = choose_crs_thresholds(feature_table, targets)
+        regimen_meta = build_regimen_metadata(reg_events)
+        shape_cfg = build_shape_config(feature_table, regimen_meta, objective_defaults)
+
+        if search_method == "guided_ce":
+            best_idx, best_score, best_details, trace, guided_prob_tab = guided_subset_search_ce(
+                feature_table=feature_table,
+                n_select=n_select,
+                n_draws=n_draws,
+                seed=subset_seed,
+                targets=targets,
+                crs_thresholds=crs_thresholds,
+                shape_cfg=shape_cfg,
+                ce_batch_size=ce_batch_size,
+                ce_elite_frac=ce_elite_frac,
+                ce_smoothing=ce_smoothing,
+                ce_min_prob_frac=ce_min_prob_frac,
+                local_swaps=guided_local_swaps,
+            )
+        else:
+            best_idx, best_score, best_details, trace = random_subset_search(
+                feature_table=feature_table,
+                n_select=n_select,
+                n_draws=n_draws,
+                seed=subset_seed,
+                targets=targets,
+                crs_thresholds=crs_thresholds,
+                shape_cfg=shape_cfg,
+            )
 
     selected_ids = feature_table.iloc[best_idx]["patient_id"].tolist()
     selected_patients = patients[patients["patient_id"].isin(selected_ids)].copy().sort_values("patient_id")
 
     feature_path = run_dir / "candidate_features.csv"
     trace_path = run_dir / "objective_trace.csv"
+    guided_probs_path = run_dir / "guided_sampling_probabilities.csv"
     selected_path = run_dir / "selected_patients.csv"
     summary_path = run_dir / "pruning_summary.json"
 
     feature_table.to_csv(feature_path, index=False)
     trace.to_csv(trace_path, index=False)
+    if guided_prob_tab is not None:
+        guided_prob_tab.to_csv(guided_probs_path, index=False)
     selected_patients.to_csv(selected_path, index=False)
 
     summary = {
@@ -746,7 +1186,20 @@ def main() -> None:
             "n_candidates": n_candidates,
             "n_select": n_select,
             "seed": seed,
+            "subset_seed": subset_seed,
             "n_random_subsets": n_draws,
+            "objective_mode": objective_mode,
+            "search_method": search_method,
+            "ce_batch_size": ce_batch_size,
+            "ce_elite_frac": ce_elite_frac,
+            "ce_smoothing": ce_smoothing,
+            "ce_min_prob_frac": ce_min_prob_frac,
+            "guided_local_swaps": guided_local_swaps,
+            "wasserstein_spd88_csv": str(args.wasserstein_spd88_csv),
+            "wasserstein_spd88_column": str(args.wasserstein_spd88_column),
+            "wasserstein_feature": str(args.wasserstein_feature),
+            "wasserstein_regimen": str(args.wasserstein_regimen),
+            "wasserstein_weight": float(args.wasserstein_weight),
             "spread_mode": args.spread_mode,
             "julia_project": args.julia_project,
             "julia_bin": args.julia_bin,
@@ -764,6 +1217,9 @@ def main() -> None:
             "best_score": best_score,
             "best_details": best_details,
             "shape_config": shape_cfg,
+            "objective_mode": objective_mode,
+            "search_method": search_method,
+            "wasserstein_config": wasserstein_cfg,
         },
         "not_directly_evaluable_with_current_model_outputs": plan.get(
             "not_directly_evaluable_with_current_model_outputs", []
@@ -774,6 +1230,7 @@ def main() -> None:
             "selected_patients_csv": str(selected_path),
             "candidate_features_csv": str(feature_path),
             "objective_trace_csv": str(trace_path),
+            "guided_sampling_probabilities_csv": str(guided_probs_path) if guided_prob_tab is not None else "",
         },
     }
     summary_path.write_text(json.dumps(summary, indent=2))

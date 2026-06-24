@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "description": "SPD88-only Wasserstein objective plan (single regimen, 8-cycle step-up).",
+  "simulation_defaults": {
+    "engine": "canonical",
+    "solver": "qndf",
+    "abstol": 1e-08,
+    "reltol": 1e-05,
+    "dosing_mode": "preset_time_callback",
+    "variants_mode": "matlab_empty",
+    "horizon_day": 168.0
+  },
+  "regimens": {
+    "step_1_2_60_30mg_8cycles": {
+      "regimen_type": "stepup_q3w",
+      "time_day": [
+        0.0,
+        7.0,
+        14.0,
+        21.0,
+        42.0,
+        63.0,
+        84.0,
+        105.0,
+        126.0,
+        147.0
+      ],
+      "dose_mg": [
+        1.0,
+        2.0,
+        60.0,
+        60.0,
+        30.0,
+        30.0,
+        30.0,
+        30.0,
+        30.0,
+        30.0
+      ],
+      "clinical_context": "vpop_generation_commit_3a50cd1_spd_dataset_regimen"
+    }
+  },
+  "feature_bindings": {
+    "best_spd_pct": {
+      "source": "simulation_output",
+      "column": "best_spd_pct",
+      "definition": "min_t 100*(Btumor(t)/Btumor(0)-1) over simulation horizon"
+    }
+  },
+  "target_bindings": [],
+  "sampling_defaults": {
+    "n_candidates": 500,
+    "n_select": 100,
+    "seed": 20260306,
+    "tumor_burden_relative_spread_mode": "sensitivity"
+  },
+  "objective_defaults": {
+    "objective_mode": "wasserstein_spd88",
+    "subset_search_method": "guided_ce",
+    "n_random_subsets": 20000,
+    "include_standard_phase1_regimens": 0,
+    "enable_multiregimen_shape": 0,
+    "ce_batch_size": 256,
+    "ce_elite_frac": 0.12,
+    "ce_smoothing": 0.25,
+    "ce_min_prob_frac": 0.02,
+    "guided_local_swaps": 2000
+  }
+}

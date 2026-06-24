@@ -1,0 +1,335 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Executable mapping from calibration targets to simulation/feature extraction settings for VPop sampling and pruning.",
+  "simulation_defaults": {
+    "engine": "canonical",
+    "solver": "cvode_bdf",
+    "abstol": 1e-08,
+    "reltol": 1e-05,
+    "dosing_mode": "preset_time_callback",
+    "variants_mode": "matlab_empty",
+    "horizon_day": 168.0
+  },
+  "regimens": {
+    "step_1_2_13_5mg": {
+      "regimen_type": "stepup_q3w",
+      "time_day": [
+        0.0,
+        7.0,
+        14.0,
+        21.0,
+        42.0,
+        63.0
+      ],
+      "dose_mg": [
+        1.0,
+        2.0,
+        13.5,
+        13.5,
+        13.5,
+        13.5
+      ],
+      "clinical_context": "follow-up ER lower step-up regimen"
+    },
+    "step_1_2_60_30mg": {
+      "regimen_type": "stepup_q3w",
+      "time_day": [
+        0.0,
+        7.0,
+        14.0,
+        21.0,
+        42.0,
+        63.0
+      ],
+      "dose_mg": [
+        1.0,
+        2.0,
+        60.0,
+        60.0,
+        30.0,
+        30.0
+      ],
+      "clinical_context": "approved IV step-up/maintenance anchor regimen"
+    },
+    "step_1_2_60_30mg_8cycles": {
+      "regimen_type": "stepup_q3w",
+      "time_day": [
+        0.0,
+        7.0,
+        14.0,
+        21.0,
+        42.0,
+        63.0,
+        84.0,
+        105.0,
+        126.0,
+        147.0
+      ],
+      "dose_mg": [
+        1.0,
+        2.0,
+        60.0,
+        60.0,
+        30.0,
+        30.0,
+        30.0,
+        30.0,
+        30.0,
+        30.0
+      ],
+      "clinical_context": "vpop_generation_commit_3a50cd1_spd_dataset_regimen"
+    }
+  },
+  "feature_bindings": {
+    "tumor_resid_day42": {
+      "source": "simulation_output",
+      "column": "tumor_resid_day42",
+      "definition": "Btumor(day42)/Btumor(day0)",
+      "horizon_day": 42.0
+    },
+    "responder_day42_proxy": {
+      "source": "simulation_output",
+      "depends_on": "tumor_resid_day42",
+      "definition": "1{tumor_resid_day42 <= 0.5}",
+      "clinical_interpretation": "proxy for >=50% SPD reduction at Day 42"
+    },
+    "il6_peak_0_2": {
+      "source": "simulation_output",
+      "column": "il6_peak_0_2",
+      "definition": "max_t in [0,2] IL6combo(t)"
+    },
+    "il6_peak_0_21": {
+      "source": "simulation_output",
+      "column": "il6_peak_0_21",
+      "definition": "max_t in [0,21] IL6combo(t)"
+    },
+    "il6_auc_0_2": {
+      "source": "simulation_output",
+      "column": "il6_auc_0_2",
+      "definition": "AUC_t in [0,2] IL6combo(t)"
+    },
+    "il6_auc_0_21": {
+      "source": "simulation_output",
+      "column": "il6_auc_0_21",
+      "definition": "AUC_t in [0,21] IL6combo(t)"
+    },
+    "crs_proxy_day0_2": {
+      "source": "derived_threshold",
+      "depends_on": "il6_peak_0_2",
+      "definition": "1{il6_peak_0_2 >= IL6_threshold}",
+      "threshold_mode": "calibrate_from_reference_regimen"
+    },
+    "crs_proxy_day0_21": {
+      "source": "derived_threshold",
+      "depends_on": "il6_peak_0_21",
+      "definition": "1{il6_peak_0_21 >= IL6_threshold}",
+      "threshold_mode": "calibrate_from_reference_regimen"
+    },
+    "kBtumorprolif": {
+      "source": "patient_parameter",
+      "column": "kBtumorprolif"
+    },
+    "BT_ratio_tumor_init": {
+      "source": "patient_parameter",
+      "column": "BT_ratio_tumor_init"
+    },
+    "best_spd_pct": {
+      "source": "simulation_output",
+      "column": "best_spd_pct",
+      "definition": "min_t 100*(Btumor(t)/Btumor(0)-1) over simulation horizon"
+    },
+    "best_spd_le_minus90": {
+      "source": "simulation_output",
+      "column": "best_spd_le_minus90",
+      "definition": "1{best_spd_pct <= -90}"
+    },
+    "best_spd_le_minus50": {
+      "source": "simulation_output",
+      "column": "best_spd_le_minus50",
+      "definition": "1{best_spd_pct <= -50}"
+    },
+    "best_spd_gt_zero": {
+      "source": "simulation_output",
+      "column": "best_spd_gt_zero",
+      "definition": "1{best_spd_pct > 0}"
+    },
+    "best_spd_floor_hit": {
+      "source": "simulation_output",
+      "column": "best_spd_floor_hit",
+      "definition": "1{best_spd_pct <= -99.9}"
+    }
+  },
+  "target_bindings": [
+    {
+      "target_id": "tumor_bcell_proliferation_rate",
+      "evaluation_mode": "parameter_bounds",
+      "feature": "kBtumorprolif",
+      "bounds": [
+        0.0,
+        0.15
+      ],
+      "priority": "hard"
+    },
+    {
+      "target_id": "tumor_b_to_t_ratio",
+      "evaluation_mode": "parameter_bounds",
+      "feature": "BT_ratio_tumor_init",
+      "bounds": [
+        4.0,
+        80.0
+      ],
+      "priority": "hard"
+    },
+    {
+      "target_id": "fl_er_model_predicted_low_regimen",
+      "evaluation_mode": "population_fraction",
+      "regimen": "step_1_2_13_5mg",
+      "feature": "responder_day42_proxy",
+      "target_fraction": 0.582,
+      "tolerance": 0.08,
+      "weight": 1.0,
+      "priority": "soft_external"
+    },
+    {
+      "target_id": "fl_er_model_predicted_rp2d_regimen",
+      "evaluation_mode": "population_fraction",
+      "regimen": "step_1_2_60_30mg",
+      "feature": "responder_day42_proxy",
+      "target_fraction": 0.791,
+      "tolerance": 0.08,
+      "weight": 1.0,
+      "priority": "soft_external"
+    },
+    {
+      "target_id": "fl_er_model_predicted_low_regimen_crs",
+      "evaluation_mode": "population_fraction",
+      "regimen": "step_1_2_13_5mg",
+      "feature": "crs_proxy_day0_21",
+      "target_fraction": 0.07,
+      "tolerance": 0.04,
+      "weight": 1.0,
+      "priority": "soft_external"
+    },
+    {
+      "target_id": "fl_er_model_predicted_rp2d_regimen_crs",
+      "evaluation_mode": "population_fraction",
+      "regimen": "step_1_2_60_30mg",
+      "feature": "crs_proxy_day0_21",
+      "target_fraction": 0.118,
+      "tolerance": 0.05,
+      "weight": 1.0,
+      "priority": "soft_external"
+    },
+    {
+      "target_id": "fl_er_high_minus_low_response_gap",
+      "evaluation_mode": "pairwise_difference",
+      "regimen_low": "step_1_2_13_5mg",
+      "regimen_high": "step_1_2_60_30mg",
+      "feature": "responder_day42_proxy",
+      "min_difference": 0.1,
+      "tolerance": 0.06,
+      "weight": 0.5,
+      "priority": "soft_shape"
+    },
+    {
+      "target_id": "fl_er_high_minus_low_crs_gap",
+      "evaluation_mode": "pairwise_difference",
+      "regimen_low": "step_1_2_13_5mg",
+      "regimen_high": "step_1_2_60_30mg",
+      "feature": "crs_proxy_day0_21",
+      "min_difference": 0.02,
+      "tolerance": 0.03,
+      "weight": 0.5,
+      "priority": "soft_shape"
+    },
+    {
+      "target_id": "spd88_best_spd_mean_8cycle",
+      "evaluation_mode": "population_mean",
+      "regimen": "step_1_2_60_30mg_8cycles",
+      "feature": "best_spd_pct",
+      "target_mean": -79.51344838636363,
+      "tolerance": 8.0,
+      "weight": 1.0,
+      "priority": "external_spd_dataset"
+    },
+    {
+      "target_id": "spd88_best_spd_le_minus90_frac",
+      "evaluation_mode": "population_fraction",
+      "regimen": "step_1_2_60_30mg_8cycles",
+      "feature": "best_spd_le_minus90",
+      "target_fraction": 0.6590909090909091,
+      "tolerance": 0.08,
+      "weight": 1.0,
+      "priority": "external_spd_dataset"
+    },
+    {
+      "target_id": "spd88_best_spd_le_minus50_frac",
+      "evaluation_mode": "population_fraction",
+      "regimen": "step_1_2_60_30mg_8cycles",
+      "feature": "best_spd_le_minus50",
+      "target_fraction": 0.875,
+      "tolerance": 0.07,
+      "weight": 0.75,
+      "priority": "external_spd_dataset"
+    },
+    {
+      "target_id": "spd88_best_spd_gt_zero_frac",
+      "evaluation_mode": "population_fraction",
+      "regimen": "step_1_2_60_30mg_8cycles",
+      "feature": "best_spd_gt_zero",
+      "target_fraction": 0.056818181818181816,
+      "tolerance": 0.04,
+      "weight": 1.0,
+      "priority": "external_spd_dataset"
+    },
+    {
+      "target_id": "spd88_best_spd_floor_hit_frac",
+      "evaluation_mode": "population_fraction",
+      "regimen": "step_1_2_60_30mg_8cycles",
+      "feature": "best_spd_floor_hit",
+      "target_fraction": 0.5568181818181818,
+      "tolerance": 0.08,
+      "weight": 0.75,
+      "priority": "external_spd_dataset"
+    }
+  ],
+  "not_directly_evaluable_with_current_model_outputs": [
+    {
+      "target_id": "baseline_residual_rituximab_detectable_fraction",
+      "reason": "Current design sampler does not include a baseline RTX patient variable and run_phase1_callback_sweep output does not expose it."
+    },
+    {
+      "target_id": "fl_long_term_outcomes",
+      "reason": "OS/PFS/DOR are not direct model state outputs in the current implementation; requires event model or external survival mapping."
+    },
+    {
+      "target_id": "pk_dose_proportionality_window",
+      "reason": "Current phase-1 callback sweep exports IL6/Btumor proxies only; PK concentration outputs are not written in this script."
+    },
+    {
+      "target_id": "baseline_spd_distribution_global_fl",
+      "reason": "Requires explicit SPD state mapping/calibration from model tumor burden states to measured SPD."
+    }
+  ],
+  "sampling_defaults": {
+    "n_candidates": 400,
+    "n_select": 140,
+    "seed": 20260228,
+    "tumor_burden_relative_spread_mode": "primary",
+    "tumor_burden_relative_spread_primary": 0.1,
+    "tumor_burden_relative_spread_sensitivity": 0.5
+  },
+  "objective_defaults": {
+    "method": "random_subset_search",
+    "n_random_subsets": 3000,
+    "error_norm": "weighted_squared_normalized_error",
+    "include_standard_phase1_regimens": 1,
+    "enable_multiregimen_shape": 1,
+    "shape_within_regimen_type": 1,
+    "shape_response_feature": "responder_day42_proxy",
+    "shape_toxicity_feature": "il6_peak_0_21",
+    "shape_response_weight": 0.25,
+    "shape_toxicity_weight": 0.25,
+    "shape_response_tolerance": 0.04
+  }
+}

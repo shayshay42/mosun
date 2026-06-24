@@ -1,0 +1,5 @@
+figure_panel,regimen,min_change_pct,max_change_pct,pct_rank_le_minus50
+I,20 mg C1D1; 20 mg Day 1 subsequent cycles,-96.8172,233.778,73.45309381237524
+J,6.7 mg C1D1/C1D8/C1D15; 20 mg Day 1 subsequent cycles,-96.728,233.538,71.6566866267465
+K,1.6/10/10 mg C1D1/C1D8/C1D15; 20 mg Day 1 subsequent cycles,-97.1341,234.493,67.26546906187625
+L,1.6/20 mg C1D1/C1D8; 20 mg Day 1 subsequent cycles,-97.1487,233.809,67.26546906187625
